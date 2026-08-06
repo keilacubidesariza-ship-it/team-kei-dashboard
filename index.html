@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEAM KEI 🔥 — Sales Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0F2A4A; --navy-dark:#081A30; --navy-light:#1E4570;
+    --cream:#F5F8FC; --card:#FFFFFF;
+    --orange:#FF7A29; --orange-light:#FF9A57;
+    --gold:#F2B705; --pink:#E84393; --purple:#6C5CE7; --teal:#2FB6A6;
+    --green:#1FA97A; --red:#E5484D; --yellow:#E8A33D;
+    --ink:#1B2733; --muted:#7C8A9C; --border:#E4EAF2;
+    --shadow: 0 4px 20px rgba(15,42,74,0.08);
+    --shadow-lg: 0 12px 40px rgba(15,42,74,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'Inter',sans-serif;}
+  h1,h2,h3,.brand{font-family:'Poppins',sans-serif;}
+  a{color:inherit;}
+
+  /* ---------- Header ---------- */
+  header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);color:#fff;padding:16px 28px 0;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-lg);}
+  .header-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;max-width:1320px;margin:0 auto;padding-bottom:14px;}
+  .brand{font-weight:800;font-size:22px;display:flex;align-items:center;gap:8px;}
+  .brand small{font-weight:500;font-size:12px;color:#9FC4E8;display:block;margin-top:2px;font-family:'Inter',sans-serif;}
+  .nav-tabs{display:flex;gap:6px;background:rgba(255,255,255,0.08);padding:5px;border-radius:12px;}
+  .nav-tab{padding:9px 16px;border-radius:9px;font-weight:600;font-size:13.5px;cursor:pointer;color:#B9D3EC;transition:.15s;white-space:nowrap;}
+  .nav-tab:hover{color:#fff;}
+  .nav-tab.active{background:var(--orange);color:#fff;box-shadow:0 4px 12px rgba(255,122,41,.45);}
+  .refresh-box{display:flex;align-items:center;gap:10px;font-size:12px;color:#9FC4E8;}
+  .refresh-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .refresh-btn:hover{background:rgba(255,255,255,.2);}
+  .tagline-bar{max-width:1320px;margin:0 auto;text-align:right;padding:4px 0 10px;}
+  .tagline{display:inline-block;font-size:12.5px;font-weight:700;color:var(--gold);letter-spacing:.02em;}
+  .mock-banner{background:var(--gold);color:#3a2a05;text-align:center;padding:8px 16px;font-size:13px;font-weight:600;}
+
+  main{max-width:1320px;margin:0 auto;padding:26px 20px 60px;}
+  .view{display:none;}
+  .view.active{display:block;animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .section-title{font-size:19px;font-weight:700;margin:30px 0 14px;display:flex;align-items:center;gap:8px;}
+  .section-title .tag{font-size:11px;background:var(--navy);color:#fff;padding:3px 9px;border-radius:20px;font-weight:600;}
+  .section-sub{font-size:12.5px;color:var(--muted);margin:-8px 0 14px;}
+
+  /* ---------- KPI cards ---------- */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
+  .kpi-card{background:var(--card);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border);}
+  .kpi-card .label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+  .kpi-card .value{font-size:26px;font-weight:800;margin-top:6px;color:var(--navy);}
+  .kpi-card .sub{font-size:12.5px;color:var(--muted);margin-top:4px;}
+  .kpi-card.accent{background:linear-gradient(135deg,var(--orange),var(--orange-light));color:#fff;}
+  .kpi-card.accent .label,.kpi-card.accent .sub{color:rgba(255,255,255,.9);}
+  .kpi-card.accent .value{color:#fff;}
+
+  /* ---------- Podium ---------- */
+  .podium{display:flex;gap:16px;align-items:flex-end;margin-top:16px;flex-wrap:wrap;}
+  .podium-card{flex:1;min-width:180px;background:var(--card);border-radius:16px;padding:18px;text-align:center;box-shadow:var(--shadow);border:2px solid transparent;position:relative;}
+  .podium-card.p1{border-color:var(--gold);transform:scale(1.05);}
+  .medal{font-size:30px;}
+  .podium-name{font-weight:700;font-size:15px;margin-top:6px;}
+  .podium-val{font-size:20px;font-weight:800;color:var(--navy);margin-top:4px;}
+  .podium-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  .mention-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px;}
+  .mention-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;box-shadow:var(--shadow);}
+  .mention-rank{font-size:11px;font-weight:800;color:#fff;background:var(--purple);display:inline-block;padding:2px 9px;border-radius:20px;}
+  .mention-name{font-weight:700;font-size:13px;margin-top:8px;}
+  .mention-val{font-size:13px;color:var(--navy);font-weight:700;margin-top:2px;}
+
+  /* ---------- Tables ---------- */
+  .table-card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;margin-top:14px;overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{background:var(--navy);color:#fff;text-align:left;padding:11px 14px;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  tbody td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#F5F9FF;}
+  .num{font-variant-numeric:tabular-nums;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;}
+  .badge.top{background:#E3F7EE;color:var(--green);}
+  .badge.mid{background:#FFF3DE;color:#B77607;}
+  .badge.low{background:#FDEAEA;color:var(--red);}
+  .trend-up{color:var(--green);font-weight:700;}
+  .trend-down{color:var(--red);font-weight:700;}
+  .trend-flat{color:#B77607;font-weight:700;}
+
+  select,input{font-family:'Inter',sans-serif;font-size:13.5px;padding:9px 12px;border-radius:9px;border:1.5px solid var(--border);background:#fff;color:var(--ink);outline:none;}
+  select:focus,input:focus{border-color:var(--orange);}
+  .filter-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:6px;}
+  .filter-row label{font-size:12.5px;font-weight:600;color:var(--muted);margin-right:4px;}
+
+  /* ---------- Charts grid ---------- */
+  .chart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:14px;}
+  .chart-card{background:var(--card);border-radius:14px;padding:12px 14px 6px;box-shadow:var(--shadow);border:1px solid var(--border);}
+  .chart-card .ch-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .chart-card .ch-name{font-weight:700;font-size:12.5px;}
+  .chart-card canvas{max-height:110px;}
+
+  /* ---------- Focus bands ---------- */
+  .band-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px;}
+  .band-card{border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);border:1px solid var(--border);}
+  .band-card h4{margin:0 0 8px;font-size:13px;display:flex;align-items:center;gap:6px;}
+  .band-card ul{margin:0;padding-left:0;list-style:none;font-size:13px;}
+  .band-card li{padding:4px 0;display:flex;justify-content:space-between;border-bottom:1px dashed rgba(0,0,0,.06);}
+  .band-card li:last-child{border-bottom:none;}
+  .band-excelente{background:#E9FBF3;border-color:#BEEAD4;}
+  .band-bien{background:#EAF4FF;border-color:#C7DFFB;}
+  .band-atencion{background:#FFF7E3;border-color:#F5E2A8;}
+  .band-rojo{background:#FDEBEC;border-color:#F4C6C9;}
+
+  .message-box{background:linear-gradient(135deg,var(--navy),var(--navy-light));color:#fff;border-radius:16px;padding:22px 24px;margin-top:16px;line-height:1.7;font-size:14px;}
+  .message-box strong{color:var(--gold);}
+  .message-box .line{margin:6px 0;}
+
+  .ref-ranking{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:14px;}
+  @media (max-width:820px){.ref-ranking{grid-template-columns:1fr;}}
+  .ref-card{background:var(--card);border-radius:16px;padding:18px;box-shadow:var(--shadow);border:1px solid var(--border);}
+  .ref-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .ref-row:last-child{border-bottom:none;}
+  .ref-medal{width:24px;display:inline-block;text-align:center;}
+  .focus-pill{background:#FDEAEA;color:var(--red);font-weight:700;font-size:11.5px;padding:3px 10px;border-radius:20px;}
+
+  /* ---------- Profile ---------- */
+  .profile-grid{display:grid;grid-template-columns:340px 1fr;gap:20px;margin-top:16px;}
+  @media (max-width:860px){.profile-grid{grid-template-columns:1fr;}}
+  .profile-card{background:var(--card);border-radius:18px;padding:24px;box-shadow:var(--shadow);border:1px solid var(--border);}
+  .avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:24px;color:#fff;}
+  .profile-name{font-size:19px;font-weight:700;margin-top:12px;}
+  .profile-class{margin-top:8px;}
+  .stat-line{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .stat-line:last-child{border-bottom:none;}
+  .stat-line .v{font-weight:700;}
+
+  .personal-box{background:linear-gradient(135deg,#EAF2FF,#FFF3EA);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-top:16px;}
+  .personal-box h4{margin:0 0 8px;font-size:13px;color:var(--navy);}
+  .personal-box p{margin:6px 0;font-size:13px;line-height:1.5;}
+  .progress-bar{height:10px;background:#E4EAF2;border-radius:20px;overflow:hidden;margin-top:6px;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));border-radius:20px;transition:width .4s;}
+  .birthday-banner{background:linear-gradient(135deg,var(--orange),var(--gold));color:#fff;padding:10px 14px;border-radius:12px;font-weight:600;font-size:13px;margin-bottom:14px;}
+
+  .calc-toggle{display:flex;gap:8px;margin-top:20px;}
+  .calc-btn{flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-weight:700;font-size:13px;cursor:pointer;color:var(--navy);}
+  .calc-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .calc-panel{background:var(--card);border-radius:18px;padding:22px;box-shadow:var(--shadow);border:1px solid var(--border);margin-top:14px;}
+  .calc-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px;}
+  .calc-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  .calc-field input{width:100%;}
+  .calc-result{margin-top:18px;background:var(--navy);color:#fff;border-radius:14px;padding:18px 20px;}
+  .calc-result .amount{font-size:30px;font-weight:800;}
+  .calc-result .breakdown{font-size:12.5px;color:#B9D3EC;margin-top:8px;line-height:1.6;}
+  .calc-result .breakdown b{color:#fff;}
+
+  footer{text-align:center;padding:26px;color:var(--muted);font-size:12px;}
+  .empty{padding:30px;text-align:center;color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div id="mockBanner" class="mock-banner" style="display:none;">
+  ⚠️ Mostrando datos de ejemplo — conecta tu URL de Apps Script en <code>CONFIG.API_URL</code> dentro de este archivo para ver datos en vivo.
+</div>
+
+<header>
+  <div class="header-row">
+    <div>
+      <div class="brand">🔥 TEAM KEI</div>
+      <small>Sales Performance Dashboard</small>
+    </div>
+    <div class="nav-tabs">
+      <div class="nav-tab active" data-view="overview">📊 Sales Team Overview</div>
+      <div class="nav-tab" data-view="perfil">👤 Sales Advisor Profile</div>
+      <div class="nav-tab" data-view="mensual">📊 Monthly Performance</div>
+    </div>
+    <div class="refresh-box">
+      <span id="lastUpdated">Cargando…</span>
+      <button class="refresh-btn" id="refreshBtn">⟳ Actualizar</button>
+    </div>
+  </div>
+  <div class="tagline-bar"><span class="tagline" id="taglineText">❤️‍🔥 Los putos amos ❤️‍🔥</span></div>
+</header>
+
+<main>
+
+  <!-- ======================= OVERVIEW ======================= -->
+  <section id="view-overview" class="view active">
+
+    <div class="section-title">📊 Sales Team Overview <span class="tag">acumulado 2026</span></div>
+    <div class="kpi-grid" id="overviewKpis"></div>
+
+    <div class="section-title">🏆 Top 3 — Acumulado del equipo</div>
+    <div class="podium" id="overviewPodium"></div>
+
+    <div class="section-title">⭐ Mención especial</div>
+    <div class="section-sub">Puestos 4 al 10 del acumulado — también están dando la milla extra.</div>
+    <div class="mention-grid" id="mentionGrid"></div>
+
+    <div class="section-title">📅 Vista mes a mes por asesor</div>
+    <div class="filter-row">
+      <label>Mes:</label>
+      <select id="overviewMonthSelect"></select>
+    </div>
+    <div class="table-card"><div id="overviewMonthlyTable"></div></div>
+
+    <div class="section-title">📈 Consolidado y tendencia por asesor (cash)</div>
+    <div class="section-sub">Cada barra es un mes — verde si subió vs. el mes anterior, rojo si bajó, ámbar el primer mes activo.</div>
+    <div class="chart-grid" id="advisorCharts"></div>
+
+    <div class="section-title">🎯 Desempeño del mes por rangos de cumplimiento</div>
+    <div class="section-sub">Según el mes seleccionado arriba en "Vista mes a mes".</div>
+    <div class="band-grid" id="bandGrid"></div>
+
+    <div class="section-title">💬 Mensaje del período</div>
+    <div class="message-box" id="periodMessage"></div>
+
+    <div class="section-title">🤝🏻 Ranking de referidos mes a mes</div>
+    <div class="ref-ranking">
+      <div class="ref-card">
+        <h4 style="margin:0 0 10px;font-size:13px;">🏅 Top referidores (acumulado)</h4>
+        <div id="refRankingBox"></div>
+      </div>
+      <div class="ref-card">
+        <h4 style="margin:0 0 10px;font-size:13px;">🧭 Aún sin su primer referido</h4>
+        <div id="refFocusBox"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ======================= PERFIL ======================= -->
+  <section id="view-perfil" class="view">
+
+    <div class="section-title">👤 Sales Advisor Profile</div>
+    <div class="filter-row">
+      <label>Asesor:</label>
+      <select id="perfilAsesorSelect"></select>
+    </div>
+
+    <div class="profile-grid">
+      <div>
+        <div class="profile-card" id="profileCard"></div>
+        <div class="personal-box" id="personalBox"></div>
+      </div>
+      <div>
+        <div class="table-card"><div id="profileHistoryTable"></div></div>
+
+        <div class="calc-toggle">
+          <div class="calc-btn active" id="btnCalcNuevo">✨ Calcular Modelo Nuevo</div>
+          <div class="calc-btn" id="btnCalcAnterior">🧮 Calcular Modelo Anterior</div>
+        </div>
+        <div class="calc-panel" id="calcPanel"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ======================= MENSUAL ======================= -->
+  <section id="view-mensual" class="view">
+
+    <div class="section-title">📊 Monthly Performance</div>
+    <div class="filter-row">
+      <label>Mes:</label>
+      <select id="mensualMonthSelect"></select>
+    </div>
+
+    <div class="kpi-grid" id="mensualKpis"></div>
+
+    <div class="section-title">🏅 Rankings del mes</div>
+    <div class="kpi-grid" id="mensualRankings"></div>
+
+    <div class="section-title">🎯 Cumplimiento de equipo</div>
+    <div class="kpi-grid" id="mensualCumplimiento"></div>
+
+    <div class="section-title">🏆 Top 3 del mes</div>
+    <div class="podium" id="mensualPodium"></div>
+
+    <div class="section-title">📋 Detalle de todos los asesores</div>
+    <div class="table-card"><div id="mensualTable"></div></div>
+
+  </section>
+
+</main>
+
+<footer>
+  TEAM KEI 🔥 · Datos desde Google Sheets vía Apps Script · Se actualiza automáticamente cada 3 horas
+</footer>
+
+<script>
+/* =========================================================================
+   CONFIG
+   ========================================================================= */
+const CONFIG = {
+  API_URL: "", // ej: "https://script.google.com/macros/s/AKfycb.../exec"
+  REFRESH_MS: 3 * 60 * 60 * 1000, // 3 horas
+  CLASSIFICATION: { topMin: 100, constanteMin: 80 }, // % cumplimiento promedio
+  STREAK_MIN: 80, // racha cuenta meses con % cumplimiento >= este valor
+  MONTH_BANDS: { excelente: 95, bien: 80, atencion: 60 }, // umbrales de % cumplimiento del mes
+  CR_RANKING_MIN: 10, // % CR para el ranking "asesores con CR > X%"
+  REVENUE_RANKING_MIN: 22000, // umbral de revenue del mes para el ranking
+  TAGLINES: [
+    "❤️‍🔥 Los putos amos ❤️‍🔥",
+    "🏆 Mentalidad . Disciplina. Resultados 👑",
+    "Dios no se queda con el trabajo de nadie 🙏🏻"
+  ],
+};
+
+const MONTH_ORDER = ["Abril 2026","Mayo 2026","Junio 2026","Julio 2026","Agosto 2026"];
+
+/* =========================================================================
+   MOCK_DATA — dataset real transcrito del Sheet "Team Kei🔥"
+   ========================================================================= */
+const MOCK_DATA = {
+  generadoEn: new Date().toISOString(),
+  historico: (function(){
+    // meta, revenue, meetings, pct, ventas, cr, refs
+    const raw = {
+      "Andrea Triana": [null,null,[18200,16906,98,93,16,16.3,1],[23000,22890,104,100,18,17.1,1],[21000,0,15,0,0,0,0]],
+      "Camila Patarroyo": [[22000,23145,97,105,17,16.55,0],[20000,29647,90,148,16,17.8,2],[24200,24268,110,100,19,17.3,1],[23000,24280,101,106,18,17.0,1],[21000,3796,16,18,4,25.0,0]],
+      "Camilo Bravo": [null,[2000,974,30,49,5,16.7,0],[20200,12725,46,63,10,21.7,1],[22000,7072,81,32,9,10.8,1],[21000,5815,7,28,3,43.0,0]],
+      "Carolina Reyes": [[22000,20096,104,91,14,13.5,1],[15000,23006,77,153,14,18.2,0],[24200,9416,103,39,8,7.8,0],[22000,15152,88,69,13,13.8,2],[21000,2506,14,12,3,21.0,0]],
+      "Catalina Arregocez": [null,null,[18200,24975,90,137,16,17.8,0],[17500,14480,79,83,9,11.3,0],[21000,792,11,4,1,9.0,0]],
+      "Freddy Ospina": [[22000,9496,89,43,9,10.1,0],[20000,13582,70,68,12,17.1,0],[23200,17947,83,77,12,14.5,0],[22000,12114,68,55,9,12.0,0],[21000,1786,9,9,1,11.0,0]],
+      "Israel Silva": [[7000,2358,73,34,7,9.6,0],[20000,14109,87,71,10,11.5,0],[23200,17224,98,74,8,8.2,0],[23000,13916,107,61,8,7.0,0],[21000,1772,13,8,2,15.0,1]],
+      "Ivan Mosquera": [[22000,20226,87,92,12,12.0,0],[20000,23478,87,117,18,20.7,1],[24200,21676,100,90,16,16.55,0],[23000,10106,83,44,10,11.5,0],[21000,7250,9,35,4,44.0,0]],
+      "Jhonatan Osorio": [null,[9000,4477,67,50,7,10.4,0],[24200,12058,94,50,13,13.8,0],[23000,10085,96,44,11,11.0,0],[21000,1500,14,7,1,7.0,0]],
+      "Karol Martinez": [null,null,[2500,7814,58,313,4,6.9,0],[21000,23591,104,112,11,10.4,0],[21000,0,16,0,0,0,0]],
+      "Leonardo Sanchez": [[22000,12441,100,57,12,12.0,0],[20000,18138,95,91,10,10.5,0],[24200,30326,97,125,17,17.0,1],[23000,13889,99,60,9,8.7,0],[21000,2144,18,10,1,6.0,0]],
+      "Martin Gaspar": [[22000,9687,83,44,7,8.4,0],[20000,9313,93,47,7,7.5,1],[24200,10835,87,45,10,11.5,0],[23000,22735,81,99,12,14.3,1],[21000,930,7,4,1,14.0,0]],
+      "Sandra Fajardo": [[22000,19265,87,88,12,13.8,0],[20000,22276,100,111,19,19.0,2],[24200,14756,103,61,13,12.6,1],[23000,22525,105,98,18,16.5,1],[15000,0,16,0,0,0,0]]
+    };
+    const out = [];
+    Object.keys(raw).forEach(asesor=>{
+      raw[asesor].forEach((m,i)=>{
+        const mes = MONTH_ORDER[i];
+        if(!m){ out.push({asesor,mes,meta:0,revenue:0,pct_cumplimiento:0,ventas:0,cr_pct:0,meetings:0,referidos:0,activo:"FALSE"}); return; }
+        const [meta,revenue,meetings,pct,ventas,cr,refs] = m;
+        out.push({asesor,mes,meta,revenue,pct_cumplimiento:pct,ventas,cr_pct:cr,meetings,referidos:refs,activo:"TRUE"});
+      });
+    });
+    return out;
+  })(),
+  kpis: [
+    {mes:"Abril 2026",meta:176000,recaudado:153268,cumplimiento_pct:87.08,cr_prom_pct:12.3,ticket_promedio:1288,total_meetings:964,total_ventas:119,referidos:1,estado:"Cerrado"},
+    {mes:"Mayo 2026",meta:168000,recaudado:166503,cumplimiento_pct:99.11,cr_prom_pct:14.1,ticket_promedio:1198,total_meetings:988,total_ventas:139,referidos:6,estado:"Cerrado"},
+    {mes:"Junio 2026",meta:217920,recaudado:226944,cumplimiento_pct:104.14,cr_prom_pct:13.4,ticket_promedio:1351,total_meetings:1256,total_ventas:168,referidos:5,estado:"Cerrado"},
+    {mes:"Julio 2026",meta:217699,recaudado:216159,cumplimiento_pct:99.29,cr_prom_pct:12.4,ticket_promedio:1451,total_meetings:1201,total_ventas:149,referidos:7,estado:"Cerrado"},
+    {mes:"Agosto 2026",meta:213600,recaudado:28291,cumplimiento_pct:null,cr_prom_pct:null,ticket_promedio:null,total_meetings:null,total_ventas:null,referidos:1,estado:"En curso"}
+  ],
+  roster: [
+    {asesor:"Carolina Reyes",email:"carolina.reyes@tripleten.com",link_referido:"https://get.tripleten.com/CaroliaReyes",cumpleanos:"5 octubre"},
+    {asesor:"Sandra Fajardo",email:"sandra.fajardo@tripleten.com",link_referido:"https://get.tripleten.com/SandraFajardo",cumpleanos:"18 septiembre"},
+    {asesor:"Camila Patarroyo",email:"maria.patarroyo@tripleten.com",link_referido:"https://get.tripleten.com/MariaPatarroyo",cumpleanos:"24 noviembre"},
+    {asesor:"Andrea Triana",email:"andrea.triana@tripleten.com",link_referido:"https://get.tripleten.com/AndreaTriana",cumpleanos:"19 agosto"},
+    {asesor:"Catalina Arregocez",email:"catalina.rodriguez@tripleten.com",link_referido:"https://get.tripleten.com/CatalinaRodriguez",cumpleanos:"26 junio"},
+    {asesor:"Ivan Mosquera",email:"ivan.mosquera@tripleten.com",link_referido:"https://get.tripleten.com/IvanMosquera",cumpleanos:"14 abril"},
+    {asesor:"Leonardo Sanchez",email:"leonardo.sanchez@tripleten.com",link_referido:"https://get.tripleten.com/LeonardoSanchez",cumpleanos:"14 febrero"},
+    {asesor:"Freddy Ospina",email:"freddy.ospina@tripleten.com",link_referido:"https://get.tripleten.com/FreddyOspina",cumpleanos:"7 febrero"},
+    {asesor:"Martin Gaspar",email:"martin.gaspar@tripleten.com",link_referido:"https://get.tripleten.com/MartinGaspar",cumpleanos:"23 agosto"},
+    {asesor:"Israel Silva",email:"israel.silva@tripleten.com",link_referido:"https://get.tripleten.com/IsraelSilva",cumpleanos:"22 agosto"},
+    {asesor:"Jhonatan Osorio",email:"Jhonatan.osorio@tripleten.com",link_referido:"https://get.tripleten.com/JhonatanOsorio",cumpleanos:"7 noviembre"},
+    {asesor:"Camilo Bravo",email:"Camilo.bravo@tripleten.com",link_referido:"https://get.tripleten.com/CamiloBravo",cumpleanos:"5 junio"},
+    {asesor:"Karol Martinez",email:"Karol.martinez@tripleten.com",link_referido:"https://get.tripleten.com/KarolMartinez",cumpleanos:"19 noviembre"}
+  ],
+  metasReferidos: [
+    {mes:"Abril 2026", meta_referidos:10},
+    {mes:"Mayo 2026", meta_referidos:10},
+    {mes:"Junio 2026", meta_referidos:10},
+    {mes:"Julio 2026", meta_referidos:12},
+    {mes:"Agosto 2026", meta_referidos:12}
+  ],
+  nuevoModelo: {
+    tiers: [
+      {tier:"Tier 1",pct_comision:0.02,pagos_min:7,nr_min:9100,condicion:"Ambas: pagos Y Net Revenue"},
+      {tier:"Tier 2",pct_comision:0.06,pagos_min:9,nr_min:11700,condicion:"Ambas: pagos Y Net Revenue"},
+      {tier:"Tier 3",pct_comision:0.07,pagos_min:14,nr_min:18200,condicion:"Ambas: pagos Y Net Revenue"},
+      {tier:"Tier 4",pct_comision:0.09,pagos_min:18,nr_min:23400,condicion:"Solo Net Revenue"},
+      {tier:"Tier 5",pct_comision:0.10,pagos_min:23,nr_min:29900,condicion:"Solo Net Revenue"}
+    ],
+    fijoMensual: 500,
+    referidos: { primero:50, resto:100, cero:-100 }
+  },
+  modeloAnterior: {
+    bandas: [
+      {min:0,max:79.9,comision_pct:0.005},
+      {min:80,max:99.9,comision_pct:0.015},
+      {min:100,max:119.9,comision_pct:0.02},
+      {min:120,max:9999,comision_pct:0.035}
+    ]
+  }
+};
+
+let DATA = null;
+let currentAsesor = null;
+let currentCalcModel = "nuevo";
+let advisorCharts = [];
+
+/* ----------------------------- Utilidades ----------------------------- */
+const fmtMoney = n => (n===null||n===undefined||n==="") ? "—" : "$" + Math.round(n).toLocaleString("es-CO");
+const fmtPct = n => (n===null||n===undefined||n==="") ? "—" : n.toFixed(1) + "%";
+const initials = name => name.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+
+function closedMonths(){ return DATA.kpis.filter(k=>k.estado==="Cerrado").map(k=>k.mes); }
+function allMonths(){ return DATA.kpis.map(k=>k.mes); }
+function latestClosedMonth(){ const m = closedMonths(); return m[m.length-1]; }
+function metaReferidos(mes){ const r = (DATA.metasReferidos||[]).find(m=>m.mes===mes); return r? r.meta_referidos : null; }
+
+function historyFor(asesor){
+  return DATA.historico
+    .filter(h=>h.asesor===asesor)
+    .sort((a,b)=>MONTH_ORDER.indexOf(a.mes)-MONTH_ORDER.indexOf(b.mes));
+}
+
+function trendIcon(curr, prev){
+  if(prev===null||prev===undefined) return {icon:"⏩🟡 nuevo",cls:"trend-flat"};
+  const diff = curr - prev;
+  if (Math.abs(diff) < 0.01 || (prev>0 && Math.abs(diff/prev) < 0.03)) return {icon:"⏩🟡 estable",cls:"trend-flat"};
+  if (diff > 0) return {icon:"🔼🟢 subió",cls:"trend-up"};
+  return {icon:"🔽🔴 cayó",cls:"trend-down"};
+}
+
+function classify(asesor){
+  const hist = historyFor(asesor).filter(h=>h.activo==="TRUE");
+  if(!hist.length) return {label:"Sin datos",cls:"mid"};
+  const avg = hist.reduce((s,h)=>s+h.pct_cumplimiento,0)/hist.length;
+  if(avg >= CONFIG.CLASSIFICATION.topMin) return {label:"🏆 Top Performer",cls:"top"};
+  if(avg >= CONFIG.CLASSIFICATION.constanteMin) return {label:"💪 Constante",cls:"mid"};
+  return {label:"🧭 En revisión",cls:"low"};
+}
+
+function streak(asesor){
+  const hist = historyFor(asesor).filter(h=>h.activo==="TRUE");
+  let s = 0;
+  for(let i=hist.length-1;i>=0;i--){
+    if(hist[i].pct_cumplimiento >= CONFIG.STREAK_MIN) s++; else break;
+  }
+  return s;
+}
+
+function nextTier(revenueAcum){
+  const tiers = DATA.nuevoModelo.tiers;
+  for(const t of tiers){
+    if(revenueAcum < t.nr_min) return t;
+  }
+  return null;
+}
+
+/* ----------------------------- Mensaje personalizado ----------------------------- */
+function personalizedMessage(asesor){
+  const hist = historyFor(asesor).filter(h=>h.activo==="TRUE");
+  if(!hist.length) return { accion:"Todavía no hay meses activos registrados.", motivacion:"Cada gran cierre empieza con la primera llamada — bienvenido(a) al equipo, aquí confiamos en tu proceso." };
+  const last = hist[hist.length-1];
+  const prev = hist.length>1? hist[hist.length-2] : null;
+  const up = prev? (last.pct_cumplimiento > prev.pct_cumplimiento) : null;
+  const cls = classify(asesor).cls;
+
+  let accion, motivacion;
+
+  if (cls==="top" && (up===true||up===null)) {
+    accion = `Vas en ${fmtPct(last.pct_cumplimiento)} de tu meta y subiendo — mantené el ritmo de agenda calificada de las últimas semanas.`;
+    motivacion = "Ya demostraste que podés estar arriba — esto no te va a quedar grande, seguí así 🔥";
+  } else if (cls==="top" && up===false) {
+    accion = `Bajaste un poco frente al mes anterior (${fmtPct(last.pct_cumplimiento)} vs ${fmtPct(prev.pct_cumplimiento)}) — revisá tu agenda de la primera semana del mes, ahí se define el ritmo.`;
+    motivacion = "Un mes flojo no borra tu historial — ya lo lograste antes, hacelo de nuevo 💪";
+  } else if (cls==="mid" && (up===true||up===null)) {
+    accion = `Vas mejorando (${fmtPct(last.pct_cumplimiento)}) — con un poco más de volumen calificado llegás a Top Performer este mes.`;
+    motivacion = "Se nota el esfuerzo constante — confiá en tu proceso, el salto está cerca.";
+  } else if (cls==="mid" && up===false) {
+    accion = `Bajaste frente al mes pasado (${fmtPct(last.pct_cumplimiento)} vs ${fmtPct(prev.pct_cumplimiento)}) — revisá si es volumen de agenda o conversión y ajustá esta semana.`;
+    motivacion = "Tenés el historial para levantarlo — ya lo hiciste antes, podés romper la racha.";
+  } else {
+    accion = `Este mes estás en ${fmtPct(last.pct_cumplimiento)} de meta — enfoquémonos en agenda calificada y seguimiento diario esta semana.`;
+    motivacion = "Cada racha mala se rompe con constancia, no con perfección — has podido antes, esto no te va a quedar grande.";
+  }
+
+  if (last.referidos===0 && last.pct_cumplimiento>=80) {
+    accion += ` Te falta solo 1 referido este mes para sumar el bono — ya tenés la meta encaminada.`;
+  }
+
+  return {accion, motivacion};
+}
+
+/* ----------------------------- Render: Overview ----------------------------- */
+function renderOverview(){
+  const totalRevenue = DATA.kpis.reduce((s,k)=>s+(k.recaudado||0),0);
+  const totalMeta = DATA.kpis.reduce((s,k)=>s+(k.meta||0),0);
+  const totalVentas = DATA.kpis.reduce((s,k)=>s+(k.total_ventas||0),0);
+  const totalRefs = DATA.kpis.reduce((s,k)=>s+(k.referidos||0),0);
+  const pctAcum = totalMeta ? (totalRevenue/totalMeta*100) : 0;
+
+  document.getElementById("overviewKpis").innerHTML = `
+    <div class="kpi-card accent"><div class="label">NR Acumulado del Equipo</div><div class="value">${fmtMoney(totalRevenue)}</div><div class="sub">Meta: ${fmtMoney(totalMeta)}</div></div>
+    <div class="kpi-card"><div class="label">% Cumplimiento Acumulado</div><div class="value">${fmtPct(pctAcum)}</div><div class="sub">Abril – Agosto 2026</div></div>
+    <div class="kpi-card"><div class="label">Ventas Totales</div><div class="value">${totalVentas}</div><div class="sub">Pagos acumulados</div></div>
+    <div class="kpi-card"><div class="label">Referidos Totales</div><div class="value">🤝🏻 ${totalRefs}</div><div class="sub">Todo el período</div></div>
+  `;
+
+  const totals = {};
+  DATA.historico.forEach(h=>{ totals[h.asesor] = (totals[h.asesor]||0) + h.revenue; });
+  const ranked = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const medals = ["🥇","🥈","🥉"];
+  document.getElementById("overviewPodium").innerHTML = ranked.slice(0,3).map((r,i)=>`
+    <div class="podium-card ${i===0?'p1':''}">
+      <div class="medal">${medals[i]}</div>
+      <div class="podium-name">${r[0]}</div>
+      <div class="podium-val">${fmtMoney(r[1])}</div>
+      <div class="podium-sub">acumulado 2026</div>
+    </div>`).join("");
+
+  document.getElementById("mentionGrid").innerHTML = ranked.slice(3,10).map((r,i)=>`
+    <div class="mention-card">
+      <span class="mention-rank">#${i+4}</span>
+      <div class="mention-name">${r[0]}</div>
+      <div class="mention-val">${fmtMoney(r[1])}</div>
+    </div>`).join("") || `<div class="empty">No hay suficientes asesores.</div>`;
+
+  const monthSel = document.getElementById("overviewMonthSelect");
+  monthSel.innerHTML = allMonths().map(m=>`<option value="${m}">${m}</option>`).join("");
+  monthSel.value = latestClosedMonth();
+  monthSel.onchange = ()=>{ renderOverviewMonthly(monthSel.value); renderBands(monthSel.value); renderPeriodMessage(monthSel.value); };
+  renderOverviewMonthly(monthSel.value);
+  renderAdvisorCharts();
+  renderBands(monthSel.value);
+  renderPeriodMessage(monthSel.value);
+  renderReferralRanking();
+}
+
+function renderOverviewMonthly(mes){
+  const rows = DATA.historico.filter(h=>h.mes===mes && h.activo==="TRUE").sort((a,b)=>b.revenue-a.revenue);
+  if(!rows.length){ document.getElementById("overviewMonthlyTable").innerHTML = `<div class="empty">Sin asesores activos registrados este mes.</div>`; return; }
+  const idx = MONTH_ORDER.indexOf(mes);
+  const prevMes = idx>0? MONTH_ORDER[idx-1] : null;
+
+  const html = `<table><thead><tr>
+      <th>Asesor</th><th>Cash (NR)</th><th>Meetings</th><th>Ventas</th><th>CR</th><th>Tendencia</th><th>Referidos</th>
+    </tr></thead><tbody>
+    ${rows.map(h=>{
+      const prev = prevMes? DATA.historico.find(x=>x.asesor===h.asesor && x.mes===prevMes && x.activo==="TRUE") : null;
+      const tr = trendIcon(h.pct_cumplimiento, prev? prev.pct_cumplimiento : null);
+      return `<tr>
+        <td>${h.asesor}</td>
+        <td class="num">${fmtMoney(h.revenue)}</td>
+        <td class="num">${h.meetings || "—"}</td>
+        <td class="num">${h.ventas}</td>
+        <td class="num">${fmtPct(h.cr_pct)}</td>
+        <td class="${tr.cls}">${tr.icon}</td>
+        <td class="num">🤝🏻 ${h.referidos}</td>
+      </tr>`;
+    }).join("")}
+    </tbody></table>`;
+  document.getElementById("overviewMonthlyTable").innerHTML = html;
+}
+
+function renderAdvisorCharts(){
+  advisorCharts.forEach(c=>c.destroy());
+  advisorCharts = [];
+  const asesores = [...new Set(DATA.historico.map(h=>h.asesor))].sort();
+  const grid = document.getElementById("advisorCharts");
+  grid.innerHTML = asesores.map(a=>`
+    <div class="chart-card">
+      <div class="ch-head"><span class="ch-name">${a}</span></div>
+      <canvas id="chart-${a.replace(/\s+/g,'_')}"></canvas>
+    </div>`).join("");
+
+  asesores.forEach(a=>{
+    const hist = historyFor(a);
+    const values = hist.map(h=>h.activo==="TRUE"? h.revenue : null);
+    const colors = values.map((v,i)=>{
+      if(v===null) return "#E4EAF2";
+      const prevIdx = [...Array(i).keys()].reverse().find(j=>values[j]!==null);
+      if(prevIdx===undefined) return "#F2B705"; // primer mes activo -> ambar
+      return v >= values[prevIdx] ? "#1FA97A" : "#E5484D";
+    });
+    const ctx = document.getElementById(`chart-${a.replace(/\s+/g,'_')}`);
+    if(!ctx || typeof Chart==="undefined") return;
+    const chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: hist.map(h=>h.mes.replace(" 2026","").slice(0,3)),
+        datasets: [{ data: values, backgroundColor: colors, borderRadius: 5, maxBarThickness: 26 }]
+      },
+      options: {
+        responsive:true,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c=> "$"+Math.round(c.raw||0).toLocaleString("es-CO") } } },
+        scales:{ y:{ display:false }, x:{ grid:{display:false}, ticks:{font:{size:10}} } }
+      }
+    });
+    advisorCharts.push(chart);
+  });
+}
+
+function renderBands(mes){
+  const rows = DATA.historico.filter(h=>h.mes===mes && h.activo==="TRUE");
+  const B = CONFIG.MONTH_BANDS;
+  const excelente = rows.filter(h=>h.pct_cumplimiento>=B.excelente).sort((a,b)=>b.pct_cumplimiento-a.pct_cumplimiento);
+  const bien = rows.filter(h=>h.pct_cumplimiento>=B.bien && h.pct_cumplimiento<B.excelente).sort((a,b)=>b.pct_cumplimiento-a.pct_cumplimiento);
+  const atencion = rows.filter(h=>h.pct_cumplimiento>=B.atencion && h.pct_cumplimiento<B.bien).sort((a,b)=>b.pct_cumplimiento-a.pct_cumplimiento);
+  const rojo = rows.filter(h=>h.pct_cumplimiento<B.atencion).sort((a,b)=>b.pct_cumplimiento-a.pct_cumplimiento);
+
+  const list = arr => arr.length? arr.map(h=>`<li><span>${h.asesor}</span><span><b>${fmtPct(h.pct_cumplimiento)}</b></span></li>`).join("") : `<li style="color:var(--muted);">Nadie en este rango</li>`;
+
+  document.getElementById("bandGrid").innerHTML = `
+    <div class="band-card band-excelente"><h4>🟢 Excelente (≥${B.excelente}%)</h4><ul>${list(excelente)}</ul></div>
+    <div class="band-card band-bien"><h4>🔵 Bien (${B.bien}–${B.excelente}%)</h4><ul>${list(bien)}</ul></div>
+    <div class="band-card band-atencion"><h4>🟡 Atención (${B.atencion}–${B.bien}%)</h4><ul>${list(atencion)}</ul></div>
+    <div class="band-card band-rojo"><h4>🔴 Foco rojo (&lt;${B.atencion}%)</h4><ul>${list(rojo)}</ul></div>
+  `;
+}
+
+function renderPeriodMessage(mes){
+  const rows = DATA.historico.filter(h=>h.mes===mes && h.activo==="TRUE");
+  const bien = rows.filter(h=>h.pct_cumplimiento>=95).sort((a,b)=>b.pct_cumplimiento-a.pct_cumplimiento);
+  const mal = rows.filter(h=>h.pct_cumplimiento<95).sort((a,b)=>a.pct_cumplimiento-b.pct_cumplimiento);
+
+  let html = `<div class="line">📆 <strong>${mes}</strong> — así viene el equipo:</div>`;
+  if(bien.length){
+    html += `<div class="line">✅ Felicitaciones a <strong>${bien.map(h=>h.asesor).join(", ")}</strong> por venir con ${bien.length>1?'buen cumplimiento (≥95%)':'buen cumplimiento (≥95%)'} — sigan así.</div>`;
+  }
+  if(mal.length){
+    html += `<div class="line">🔶 Hay que dar la milla extra: <strong>${mal.map(h=>h.asesor).join(", ")}</strong> están por debajo del 95% de meta este mes — un buen cierre de semana los pone del otro lado.</div>`;
+  }
+  if(!rows.length){
+    html += `<div class="line">Sin datos activos para este mes todavía.</div>`;
+  }
+  document.getElementById("periodMessage").innerHTML = html;
+}
+
+function renderReferralRanking(){
+  const totals = {};
+  DATA.historico.forEach(h=>{ totals[h.asesor] = (totals[h.asesor]||0) + (h.referidos||0); });
+  const ranked = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const medals = ["🥇","🥈","🥉"];
+  document.getElementById("refRankingBox").innerHTML = ranked.filter(r=>r[1]>0).map((r,i)=>`
+    <div class="ref-row"><span><span class="ref-medal">${medals[i]||"•"}</span> ${r[0]}</span><span><b>🤝🏻 ${r[1]}</b></span></div>
+  `).join("") || `<div class="empty">Aún no hay referidos registrados.</div>`;
+
+  const sinReferidos = ranked.filter(r=>r[1]===0);
+  document.getElementById("refFocusBox").innerHTML = sinReferidos.length ? sinReferidos.map(r=>`
+    <div class="ref-row"><span>${r[0]}</span><span class="focus-pill">0 referidos</span></div>
+  `).join("") + `<div style="font-size:12px;color:var(--muted);margin-top:10px;">Un empujón para que consigan el primero — el bono del primer referido son $${DATA.nuevoModelo.referidos.primero}.</div>`
+    : `<div class="empty">🎉 Todo el equipo ya tiene al menos un referido.</div>`;
+}
+
+/* ----------------------------- Render: Perfil ----------------------------- */
+function renderPerfilSelector(){
+  const sel = document.getElementById("perfilAsesorSelect");
+  const asesores = [...new Set(DATA.historico.map(h=>h.asesor))].sort();
+  sel.innerHTML = asesores.map(a=>`<option value="${a}">${a}</option>`).join("");
+  sel.onchange = ()=>{ currentAsesor = sel.value; renderPerfil(); };
+  currentAsesor = asesores[0];
+  sel.value = currentAsesor;
+  renderPerfil();
+}
+
+function renderPerfil(){
+  const hist = historyFor(currentAsesor);
+  const activeHist = hist.filter(h=>h.activo==="TRUE");
+  const last = activeHist[activeHist.length-1];
+  const cls = classify(currentAsesor);
+  const totalRevenue = activeHist.reduce((s,h)=>s+h.revenue,0);
+  const totalVentas = activeHist.reduce((s,h)=>s+h.ventas,0);
+  const totalRefs = activeHist.reduce((s,h)=>s+h.referidos,0);
+  const rosterInfo = DATA.roster.find(r=>r.asesor===currentAsesor) || {};
+
+  document.getElementById("profileCard").innerHTML = `
+    <div class="avatar">${initials(currentAsesor)}</div>
+    <div class="profile-name">${currentAsesor}</div>
+    <div class="profile-class"><span class="badge ${cls.cls}">${cls.label}</span></div>
+    <div style="margin-top:18px;">
+      ${rosterInfo.cumpleanos? `<div class="stat-line"><span>🎂 Cumpleaños</span><span class="v">${rosterInfo.cumpleanos}</span></div>`:""}
+      <div class="stat-line"><span>NR acumulado</span><span class="v">${fmtMoney(totalRevenue)}</span></div>
+      <div class="stat-line"><span>Ventas acumuladas</span><span class="v">${totalVentas}</span></div>
+      <div class="stat-line"><span>Referidos acumulados</span><span class="v">🤝🏻 ${totalRefs}</span></div>
+      <div class="stat-line"><span>Meses activo</span><span class="v">${activeHist.length}</span></div>
+      <div class="stat-line"><span>Racha ≥${CONFIG.STREAK_MIN}% meta</span><span class="v">${streak(currentAsesor)} ${streak(currentAsesor)===1?"mes":"meses"}</span></div>
+      ${rosterInfo.link_referido? `<div class="stat-line"><span>Link de referido</span><span class="v" style="font-size:11px;">${rosterInfo.link_referido.replace("https://","")}</span></div>`:""}
+    </div>
+  `;
+
+  let personalHtml = "";
+  const today = new Date();
+  if(rosterInfo.cumpleanos){
+    personalHtml += `<div class="birthday-banner">🎂 Cumpleaños: ${rosterInfo.cumpleanos} — un mensaje del equipo nunca sobra.</div>`;
+  }
+  const msg = personalizedMessage(currentAsesor);
+  personalHtml += `<h4>✨ Para ti este mes</h4><p><strong>Qué hacer:</strong> ${msg.accion}</p><p><strong>💪 ${msg.motivacion}</strong></p>`;
+
+  if(last){
+    const nt = nextTier(last.revenue);
+    if(nt){
+      const pct = Math.min(100, Math.round(last.revenue/nt.nr_min*100));
+      personalHtml += `
+        <p style="margin-top:14px;"><strong>Progreso a ${nt.tier}</strong> (${fmtPct(nt.pct_comision*100)} de comisión) — te faltan ${fmtMoney(nt.nr_min-last.revenue)} este mes</p>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>`;
+    } else {
+      personalHtml += `<p style="margin-top:14px;"><strong>🏆 Superaste el Tier 5</strong> este mes — el nivel más alto del modelo nuevo.</p>`;
+    }
+  }
+  document.getElementById("personalBox").innerHTML = personalHtml;
+
+  document.getElementById("profileHistoryTable").innerHTML = `
+    <table><thead><tr><th>Mes</th><th>Meta</th><th>NR</th><th>% Cumpl.</th><th>Meetings</th><th>Ventas</th><th>CR</th><th>Tendencia</th><th>Refs</th></tr></thead>
+    <tbody>${activeHist.map((h,i)=>{
+      const prev = i>0? activeHist[i-1]:null;
+      const tr = trendIcon(h.pct_cumplimiento, prev? prev.pct_cumplimiento:null);
+      return `<tr>
+        <td>${h.mes}</td><td class="num">${fmtMoney(h.meta)}</td><td class="num">${fmtMoney(h.revenue)}</td>
+        <td class="num">${fmtPct(h.pct_cumplimiento)}</td><td class="num">${h.meetings||"—"}</td><td class="num">${h.ventas}</td><td class="num">${fmtPct(h.cr_pct)}</td>
+        <td class="${tr.cls}">${tr.icon}</td><td class="num">🤝🏻 ${h.referidos}</td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="9" class="empty">Sin meses activos registrados</td></tr>`}</tbody></table>`;
+
+  renderCalcPanel();
+}
+
+/* ----------------------------- Calculadoras ----------------------------- */
+document.getElementById("btnCalcNuevo").onclick = ()=>{ currentCalcModel="nuevo"; toggleCalcBtns(); renderCalcPanel(); };
+document.getElementById("btnCalcAnterior").onclick = ()=>{ currentCalcModel="anterior"; toggleCalcBtns(); renderCalcPanel(); };
+function toggleCalcBtns(){
+  document.getElementById("btnCalcNuevo").classList.toggle("active", currentCalcModel==="nuevo");
+  document.getElementById("btnCalcAnterior").classList.toggle("active", currentCalcModel==="anterior");
+}
+
+function renderCalcPanel(){
+  const hist = historyFor(currentAsesor).filter(h=>h.activo==="TRUE");
+  const last = hist[hist.length-1] || {revenue:0, meta:0, referidos:0, ventas:0};
+
+  if(currentCalcModel==="nuevo"){
+    document.getElementById("calcPanel").innerHTML = `
+      <div style="font-weight:700;font-size:14px;">✨ Modelo Nuevo — por tiers</div>
+      <div class="calc-form">
+        <div class="calc-field"><label>Net Revenue acumulado del mes ($)</label><input type="number" id="nNR" value="${last.revenue}"></div>
+        <div class="calc-field"><label># Pagos (new students)</label><input type="number" id="nPagos" value="${last.ventas}"></div>
+        <div class="calc-field"><label>Referidos este mes</label><input type="number" id="nRefs" value="${last.referidos}"></div>
+      </div>
+      <div class="calc-result" id="nResult"></div>`;
+    ["nNR","nPagos","nRefs"].forEach(id=>document.getElementById(id).oninput = calcNuevo);
+    calcNuevo();
+  } else {
+    document.getElementById("calcPanel").innerHTML = `
+      <div style="font-weight:700;font-size:14px;">🧮 Modelo Anterior — por bandas de cumplimiento semanal</div>
+      <div class="calc-form">
+        <div class="calc-field"><label>NR o cash de la semana ($)</label><input type="number" id="aNR" value="0"></div>
+        <div class="calc-field"><label>Meta semanal ($)</label><input type="number" id="aMetaSemanal" value="0"></div>
+        <div class="calc-field"><label>Referidos</label><input type="number" id="aRefs" value="0"></div>
+        <div class="calc-field"><label>Salario base ($)</label><input type="number" id="aSalario" value="0"></div>
+      </div>
+      <div class="calc-result" id="aResult"></div>`;
+    ["aNR","aMetaSemanal","aRefs","aSalario"].forEach(id=>document.getElementById(id).oninput = calcAnterior);
+    calcAnterior();
+  }
+}
+
+function calcNuevo(){
+  const nr = parseFloat(document.getElementById("nNR").value)||0;
+  const pagos = parseFloat(document.getElementById("nPagos").value)||0;
+  const refs = parseFloat(document.getElementById("nRefs").value)||0;
+  const tiers = DATA.nuevoModelo.tiers;
+  let achieved = null;
+  for(const t of tiers){
+    const nrOk = nr >= t.nr_min;
+    const pagosOk = pagos >= t.pagos_min;
+    const bothRequired = t.condicion.indexOf("Ambas") === 0;
+    if (bothRequired ? (nrOk && pagosOk) : nrOk) achieved = t;
+  }
+  const comisionVariable = achieved ? nr * achieved.pct_comision : 0;
+  const fijo = DATA.nuevoModelo.fijoMensual;
+  let refBonus;
+  if (refs === 0) refBonus = DATA.nuevoModelo.referidos.cero; // -$100
+  else refBonus = DATA.nuevoModelo.referidos.primero + Math.max(0,refs-1)*DATA.nuevoModelo.referidos.resto;
+  const total = comisionVariable + fijo + refBonus;
+  const comisionPromedio = pagos>0 ? total/pagos : 0;
+  document.getElementById("nResult").innerHTML = `
+    <div class="amount">${fmtMoney(total)}</div>
+    <div class="breakdown">
+      Tier alcanzado: <b>${achieved? achieved.tier + " (" + fmtPct(achieved.pct_comision*100) + ")" : "Ninguno aún"}</b><br>
+      Comisión variable: ${fmtMoney(comisionVariable)} · Fijo mensual: ${fmtMoney(fijo)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refs===0?' (0 referidos = -$100)':''}<br>
+      <b>Comisión promedio por venta:</b> ${pagos>0? fmtMoney(comisionPromedio) : "—"} ${pagos>0? `(tasa efectiva ${fmtPct(nr? total/nr*100 : 0)} sobre tu NR)`:''}
+    </div>`;
+}
+
+function calcAnterior(){
+  const nr = parseFloat(document.getElementById("aNR").value)||0;
+  const meta = parseFloat(document.getElementById("aMetaSemanal").value)||0;
+  const refs = parseFloat(document.getElementById("aRefs").value)||0;
+  const salario = parseFloat(document.getElementById("aSalario").value)||0;
+  const pct = meta? (nr/meta*100) : 0;
+  const banda = DATA.modeloAnterior.bandas.find(b=>pct>=b.min && pct<=b.max) || DATA.modeloAnterior.bandas[0];
+  const comision = nr * banda.comision_pct;
+  const refBonus = refs>0 ? 50 + Math.max(0,refs-1)*100 : 0;
+  const cashFinal = comision + refBonus + salario;
+  document.getElementById("aResult").innerHTML = `
+    <div class="amount">${fmtMoney(cashFinal)}</div>
+    <div class="breakdown">
+      % Cumplimiento semanal: <b>${fmtPct(pct)}</b> → banda ${fmtPct(banda.comision_pct*100)}<br>
+      Comisión: ${fmtMoney(comision)} · Bono referidos: ${fmtMoney(refBonus)} · Salario base: ${fmtMoney(salario)}<br>
+      <b>Cash final = comisión + bono referidos + salario</b>
+    </div>`;
+}
+
+/* ----------------------------- Render: Mensual ----------------------------- */
+function renderMensualSelector(){
+  const sel = document.getElementById("mensualMonthSelect");
+  sel.innerHTML = allMonths().map(m=>`<option value="${m}">${m}</option>`).join("");
+  sel.value = latestClosedMonth();
+  sel.onchange = ()=>renderMensual(sel.value);
+  renderMensual(sel.value);
+}
+
+function renderMensual(mes){
+  const kpi = DATA.kpis.find(k=>k.mes===mes);
+  document.getElementById("mensualKpis").innerHTML = `
+    <div class="kpi-card accent"><div class="label">Recaudado</div><div class="value">${fmtMoney(kpi.recaudado)}</div><div class="sub">Meta: ${fmtMoney(kpi.meta)}</div></div>
+    <div class="kpi-card"><div class="label">Cumplimiento</div><div class="value">${kpi.estado==="En curso"? "En curso":fmtPct(kpi.cumplimiento_pct)}</div><div class="sub">${kpi.estado}</div></div>
+    <div class="kpi-card"><div class="label">CR Promedio</div><div class="value">${fmtPct(kpi.cr_prom_pct)}</div><div class="sub">vs benchmark equipo</div></div>
+    <div class="kpi-card"><div class="label">Ventas / Meetings</div><div class="value">${kpi.total_ventas ?? "—"} / ${kpi.total_meetings ?? "—"}</div><div class="sub">Total del mes</div></div>
+    <div class="kpi-card"><div class="label">Referidos</div><div class="value">🤝🏻 ${kpi.referidos}</div><div class="sub">Del mes</div></div>
+  `;
+
+  const rows = DATA.historico.filter(h=>h.mes===mes && h.activo==="TRUE");
+
+  const crCount = rows.filter(h=>h.cr_pct>CONFIG.CR_RANKING_MIN).length;
+  const count100 = rows.filter(h=>h.pct_cumplimiento>=100).length;
+  const count22k = rows.filter(h=>h.revenue>CONFIG.REVENUE_RANKING_MIN).length;
+
+  document.getElementById("mensualRankings").innerHTML = `
+    <div class="kpi-card" style="border-top:4px solid var(--teal);"><div class="label">CR &gt; ${CONFIG.CR_RANKING_MIN}%</div><div class="value">${crCount}</div><div class="sub">de ${rows.length} asesores activos</div></div>
+    <div class="kpi-card" style="border-top:4px solid var(--purple);"><div class="label">Lograron ≥100% meta</div><div class="value">${count100}</div><div class="sub">de ${rows.length} asesores activos</div></div>
+    <div class="kpi-card" style="border-top:4px solid var(--pink);"><div class="label">Revenue &gt; ${fmtMoney(CONFIG.REVENUE_RANKING_MIN)}</div><div class="value">${count22k}</div><div class="sub">de ${rows.length} asesores activos</div></div>
+  `;
+
+  const metaRef = metaReferidos(mes);
+  const refPct = metaRef? (kpi.referidos/metaRef*100) : null;
+  document.getElementById("mensualCumplimiento").innerHTML = `
+    <div class="kpi-card accent"><div class="label">Cumplimiento en Revenue</div><div class="value">${kpi.estado==="En curso"?"En curso":fmtPct(kpi.cumplimiento_pct)}</div><div class="sub">${fmtMoney(kpi.recaudado)} / ${fmtMoney(kpi.meta)}</div></div>
+    <div class="kpi-card" style="border-top:4px solid var(--gold);"><div class="label">Cumplimiento en Referidos</div><div class="value">${refPct!==null? fmtPct(refPct) : "—"}</div><div class="sub">${kpi.referidos} / ${metaRef ?? "—"} meta</div></div>
+  `;
+
+  const rowsRanked = [...rows].sort((a,b)=>b.revenue-a.revenue);
+  const medals=["🥇","🥈","🥉"];
+  document.getElementById("mensualPodium").innerHTML = rowsRanked.slice(0,3).map((h,i)=>`
+    <div class="podium-card ${i===0?'p1':''}">
+      <div class="medal">${medals[i]}</div>
+      <div class="podium-name">${h.asesor}</div>
+      <div class="podium-val">${fmtMoney(h.revenue)}</div>
+      <div class="podium-sub">${fmtPct(h.pct_cumplimiento)} de meta</div>
+    </div>`).join("") || `<div class="empty">Sin datos para este mes.</div>`;
+
+  document.getElementById("mensualTable").innerHTML = rowsRanked.length ? `
+    <table><thead><tr><th>#</th><th>Asesor</th><th>Meta</th><th>NR</th><th>% Cumpl.</th><th>Meetings</th><th>Ventas</th><th>CR</th><th>Refs</th></tr></thead>
+    <tbody>${rowsRanked.map((h,i)=>`<tr>
+      <td>${i+1}</td><td>${h.asesor}</td><td class="num">${fmtMoney(h.meta)}</td><td class="num">${fmtMoney(h.revenue)}</td>
+      <td class="num">${fmtPct(h.pct_cumplimiento)}</td><td class="num">${h.meetings||"—"}</td><td class="num">${h.ventas}</td><td class="num">${fmtPct(h.cr_pct)}</td><td class="num">🤝🏻 ${h.referidos}</td>
+    </tr>`).join("")}</tbody></table>` : `<div class="empty">Sin asesores activos este mes.</div>`;
+}
+
+/* ----------------------------- Navegación ----------------------------- */
+document.querySelectorAll(".nav-tab").forEach(tab=>{
+  tab.onclick = ()=>{
+    document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("view-"+tab.dataset.view).classList.add("active");
+  };
+});
+
+/* ----------------------------- Tagline rotativo ----------------------------- */
+let taglineIdx = 0;
+setInterval(()=>{
+  taglineIdx = (taglineIdx+1) % CONFIG.TAGLINES.length;
+  const el = document.getElementById("taglineText");
+  if(el) el.textContent = CONFIG.TAGLINES[taglineIdx];
+}, 4000);
+
+/* ----------------------------- Carga de datos ----------------------------- */
+async function loadData(){
+  if(!CONFIG.API_URL){
+    DATA = MOCK_DATA;
+    document.getElementById("mockBanner").style.display = "block";
+  } else {
+    try{
+      const res = await fetch(CONFIG.API_URL, {cache:"no-store"});
+      DATA = await res.json();
+      document.getElementById("mockBanner").style.display = "none";
+    } catch(err){
+      console.error("No se pudo conectar al Apps Script, usando datos de ejemplo:", err);
+      DATA = MOCK_DATA;
+      document.getElementById("mockBanner").style.display = "block";
+    }
+  }
+  document.getElementById("lastUpdated").textContent = "Actualizado: " + new Date(DATA.generadoEn || Date.now()).toLocaleString("es-CO");
+  renderAll();
+}
+
+function renderAll(){
+  renderOverview();
+  renderPerfilSelector();
+  renderMensualSelector();
+}
+
+document.getElementById("refreshBtn").onclick = loadData;
+setInterval(loadData, CONFIG.REFRESH_MS);
+loadData();
+</script>
+</body>
+</html>
