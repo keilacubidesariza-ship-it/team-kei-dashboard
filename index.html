@@ -278,7 +278,7 @@
         <div class="calc-panel" id="calcPanel"></div>
 
         <div class="elite-banner">
-          <div class="elite-banner-title">🏆 ERES PARTE DE ELITE TEAM</div>
+          <div class="elite-banner-title">🏆 ERES PARTE ELITE TEAM</div>
           <p>Aquí no nos rendimos. Pensamos en grande, cuidamos nuestra mentalidad, trabajamos con disciplina y confiamos en Dios. Los resultados son consecuencia de nuestras acciones diarias.</p>
         </div>
       </div>
@@ -877,11 +877,21 @@ function renderCalcPanel(){
       <div class="calc-form">
         <div class="calc-field"><label>NR o cash de la semana ($)</label><input type="number" id="aNR" value="0"></div>
         <div class="calc-field"><label>Meta semanal ($)</label><input type="number" id="aMetaSemanal" value="0"></div>
-        <div class="calc-field"><label>Referidos</label><input type="number" id="aRefs" value="0"></div>
         <div class="calc-field"><label>Salario base ($)</label><input type="number" id="aSalario" value="0"></div>
       </div>
+      <div style="margin-top:14px;display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="aUltimaSemana" style="width:auto;">
+        <label for="aUltimaSemana" style="font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;">Es la última semana del mes (aquí se aplica el bono/penalización de referidos)</label>
+      </div>
+      <div class="calc-form" id="aRefsWrap" style="display:none;margin-top:10px;">
+        <div class="calc-field"><label>Referidos del mes</label><input type="number" id="aRefs" value="0"></div>
+      </div>
       <div class="calc-result" id="aResult"></div>`;
-    ["aNR","aMetaSemanal","aRefs","aSalario"].forEach(id=>document.getElementById(id).oninput = calcAnterior);
+    ["aNR","aMetaSemanal","aSalario","aRefs"].forEach(id=>document.getElementById(id).oninput = calcAnterior);
+    document.getElementById("aUltimaSemana").onchange = function(){
+      document.getElementById("aRefsWrap").style.display = this.checked ? "grid" : "none";
+      calcAnterior();
+    };
     calcAnterior();
   }
 }
@@ -900,9 +910,19 @@ function calcNuevo(){
   }
   const comisionVariable = achieved ? nr * achieved.pct_comision : 0;
   const fijo = DATA.nuevoModelo.fijoMensual;
-  let refBonus;
-  if (refs === 0) refBonus = DATA.nuevoModelo.referidos.cero; // -$100
-  else refBonus = DATA.nuevoModelo.referidos.primero + Math.max(0,refs-1)*DATA.nuevoModelo.referidos.resto;
+
+  // La penalización de 0 referidos sale de la comisión, nunca del salario fijo;
+  // si no hay comisión que descontar, no se aplica penalización.
+  let refBonus, refNota;
+  if (refs === 0) {
+    const descuento = Math.min(100, comisionVariable);
+    refBonus = comisionVariable > 0 ? -descuento : 0;
+    refNota = comisionVariable > 0 ? ` (0 referidos = -${fmtMoney(descuento)} sobre tu comisión)` : ' (0 referidos, pero sin comisión que descontar)';
+  } else {
+    refBonus = DATA.nuevoModelo.referidos.primero + Math.max(0,refs-1)*DATA.nuevoModelo.referidos.resto;
+    refNota = '';
+  }
+
   const total = comisionVariable + fijo + refBonus;
   const comisionPromedio = pagos>0 ? total/pagos : 0;
   const totalCOP = TRM_COP ? total * TRM_COP : null;
@@ -910,7 +930,7 @@ function calcNuevo(){
     <div class="amount">${fmtMoney(total)}</div>
     <div class="breakdown">
       Tier alcanzado: <b>${achieved? achieved.tier + " (" + fmtPct(achieved.pct_comision*100) + ")" : "Ninguno aún"}</b><br>
-      Comisión variable: ${fmtMoney(comisionVariable)} · Salario fijo mensual: ${fmtMoney(fijo)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refs===0?' (0 referidos = -$100)':''}<br>
+      Comisión variable: ${fmtMoney(comisionVariable)} · Salario fijo mensual: ${fmtMoney(fijo)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refNota}<br>
       <b>Total = ${fmtMoney(comisionVariable)} (comisión) + ${fmtMoney(fijo)} (salario fijo) + ${fmtMoney(refBonus)} (referidos) = ${fmtMoney(total)}</b><br>
       <b>Comisión promedio por venta:</b> ${pagos>0? fmtMoney(comisionPromedio) : "—"} ${pagos>0? `(tasa efectiva ${fmtPct(nr? total/nr*100 : 0)} sobre tu NR)`:''}
     </div>
@@ -923,20 +943,40 @@ function calcNuevo(){
 function calcAnterior(){
   const nr = parseFloat(document.getElementById("aNR").value)||0;
   const meta = parseFloat(document.getElementById("aMetaSemanal").value)||0;
-  const refs = parseFloat(document.getElementById("aRefs").value)||0;
   const salario = parseFloat(document.getElementById("aSalario").value)||0;
+  const ultimaSemanaEl = document.getElementById("aUltimaSemana");
+  const esUltimaSemana = ultimaSemanaEl ? ultimaSemanaEl.checked : false;
+  const refs = esUltimaSemana ? (parseFloat(document.getElementById("aRefs").value)||0) : 0;
   const pct = meta? (nr/meta*100) : 0;
   const banda = DATA.modeloAnterior.bandas.find(b=>pct>=b.min && pct<=b.max) || DATA.modeloAnterior.bandas[0];
   const comision = nr * banda.comision_pct;
-  const refBonus = refs>0 ? 50 + Math.max(0,refs-1)*100 : -100;
+
+  // El bono/penalización de referidos es MENSUAL, no semanal — solo se aplica en la
+  // última semana del mes. La penalización de 0 referidos sale de la comisión, nunca
+  // del salario base; si no hay comisión que descontar, no se aplica penalización.
+  let refBonus = 0, refLinea = "Referidos: se calculan solo en la última semana del mes";
+  if(esUltimaSemana){
+    if(refs === 0){
+      const descuento = Math.min(100, comision);
+      refBonus = comision > 0 ? -descuento : 0;
+      refLinea = comision > 0
+        ? `Bono/penalización referidos (mes): ${fmtMoney(refBonus)} (0 referidos = -${fmtMoney(descuento)} sobre tu comisión)`
+        : `Bono/penalización referidos (mes): $0 (0 referidos, pero sin comisión que descontar)`;
+    } else {
+      refBonus = 50 + Math.max(0,refs-1)*100;
+      refLinea = `Bono/penalización referidos (mes): ${fmtMoney(refBonus)}`;
+    }
+  }
+
   const cashFinal = comision + refBonus + salario;
   const cashFinalCOP = TRM_COP ? cashFinal * TRM_COP : null;
   document.getElementById("aResult").innerHTML = `
     <div class="amount">${fmtMoney(cashFinal)}</div>
     <div class="breakdown">
       % Cumplimiento semanal: <b>${fmtPct(pct)}</b> → banda ${fmtPct(banda.comision_pct*100)}<br>
-      Comisión: ${fmtMoney(comision)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refs===0?' (0 referidos = -$100)':''} · Salario base: ${fmtMoney(salario)}<br>
-      <b>Cash final = comisión + bono referidos + salario</b>
+      Comisión: ${fmtMoney(comision)} · Salario base: ${fmtMoney(salario)}<br>
+      ${refLinea}<br>
+      <b>Cash final = comisión (con ajuste de referidos si aplica) + salario</b>
     </div>
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);font-size:12.5px;color:#B9D3EC;">
       💱 En pesos colombianos ${TRM_COP? '(TRM del día: $'+TRM_COP.toLocaleString('es-CO')+' COP/USD)':''}<br>
