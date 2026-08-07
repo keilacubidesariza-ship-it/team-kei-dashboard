@@ -165,8 +165,9 @@
 
   .elite-banner{position:relative;margin-top:20px;background:linear-gradient(135deg,var(--orange),var(--orange-light));color:#fff;border-radius:20px;padding:20px 22px;box-shadow:var(--shadow-lg);}
   .elite-banner::before{content:"";position:absolute;top:-10px;left:36px;width:20px;height:20px;background:var(--orange);transform:rotate(45deg);border-radius:4px;}
-  .elite-banner-title{font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;letter-spacing:.02em;margin-bottom:8px;}
-  .elite-banner p{margin:0;font-size:13.5px;line-height:1.6;color:rgba(255,255,255,.95);}
+  .elite-banner-logo{display:block;width:72px;height:72px;border-radius:50%;object-fit:cover;margin:0 auto 12px;box-shadow:0 4px 14px rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.5);}
+  .elite-banner-title{font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;letter-spacing:.02em;margin-bottom:8px;text-align:center;}
+  .elite-banner p{margin:0;font-size:13.5px;line-height:1.6;color:rgba(255,255,255,.95);text-align:center;}
 
   footer{text-align:center;padding:26px;color:var(--muted);font-size:12px;}
   .empty{padding:30px;text-align:center;color:var(--muted);font-size:13px;}
@@ -278,7 +279,8 @@
         <div class="calc-panel" id="calcPanel"></div>
 
         <div class="elite-banner">
-          <div class="elite-banner-title">🏆 ERES PARTE ELITE TEAM</div>
+          <img class="elite-banner-logo" src="elite-logo.jpg" alt="Elite Closer Team">
+          <div class="elite-banner-title">🏆 HACES PARTE DE TEAM ELITE</div>
           <p>Aquí no nos rendimos. Pensamos en grande, cuidamos nuestra mentalidad, trabajamos con disciplina y confiamos en Dios. Los resultados son consecuencia de nuestras acciones diarias.</p>
         </div>
       </div>
@@ -336,6 +338,11 @@ const CONFIG = {
 
 const MONTH_ORDER = ["Abril 2026","Mayo 2026","Junio 2026","Julio 2026","Agosto 2026"];
 const MESES_MAP = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};
+
+// Estos 4 asesores están en el Modelo Anterior — su barra de progreso en el
+// perfil muestra meta fija de $5.000 de Net Revenue (100%) en vez del tier
+// del Modelo Nuevo. El resto del equipo sigue viendo el progreso a tiers.
+const MODELO_ANTERIOR_ASESORES = ["Carolina Reyes","Camila Patarroyo","Freddy Ospina","Karol Martinez"];
 
 /* =========================================================================
    MOCK_DATA — dataset real transcrito del Sheet "Team Kei🔥"
@@ -821,14 +828,22 @@ function renderPerfil(){
   personalHtml += `<h4>✨ Para ti este mes</h4><p><strong>Qué hacer:</strong> ${msg.accion}</p><p><strong>💪 ${msg.motivacion}</strong></p>`;
 
   if(last){
-    const nt = nextTier(last.revenue);
-    if(nt){
-      const pct = Math.min(100, Math.round(last.revenue/nt.nr_min*100));
+    if(MODELO_ANTERIOR_ASESORES.indexOf(currentAsesor) !== -1){
+      const metaAnterior = 5000;
+      const pctAnt = Math.min(100, Math.round(last.revenue/metaAnterior*100));
       personalHtml += `
-        <p style="margin-top:14px;"><strong>Progreso a ${nt.tier}</strong> (${fmtPct(nt.pct_comision*100)} de comisión) — te faltan ${fmtMoney(nt.nr_min-last.revenue)} este mes</p>
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>`;
+        <p style="margin-top:14px;"><strong>Progreso a la meta</strong> (Modelo Anterior — 100% = ${fmtMoney(metaAnterior)} de Net Revenue) — te faltan ${fmtMoney(Math.max(0, metaAnterior-last.revenue))} este mes</p>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pctAnt}%;"></div></div>`;
     } else {
-      personalHtml += `<p style="margin-top:14px;"><strong>🏆 Superaste el Tier 5</strong> este mes — el nivel más alto del modelo nuevo.</p>`;
+      const nt = nextTier(last.revenue);
+      if(nt){
+        const pct = Math.min(100, Math.round(last.revenue/nt.nr_min*100));
+        personalHtml += `
+          <p style="margin-top:14px;"><strong>Progreso a ${nt.tier}</strong> (${fmtPct(nt.pct_comision*100)} de comisión) — te faltan ${fmtMoney(nt.nr_min-last.revenue)} este mes</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>`;
+      } else {
+        personalHtml += `<p style="margin-top:14px;"><strong>🏆 Superaste el Tier 5</strong> este mes — el nivel más alto del modelo nuevo.</p>`;
+      }
     }
   }
   document.getElementById("personalBox").innerHTML = personalHtml;
