@@ -12,7 +12,7 @@
     --navy:#0F2A4A; --navy-dark:#081A30; --navy-light:#1E4570;
     --cream:#F5F8FC; --card:#FFFFFF;
     --orange:#FF7A29; --orange-light:#FF9A57;
-    --gold:#F2B705; --pink:#E84393; --purple:#6C5CE7; --teal:#2FB6A6;
+    --gold:#F2B705; --pink:#E84393; --purple:#6C5CE7; --teal:#2FB6A6; --blue:#2E6FF2;
     --green:#1FA97A; --red:#E5484D; --yellow:#E8A33D;
     --ink:#1B2733; --muted:#7C8A9C; --border:#E4EAF2;
     --shadow: 0 4px 20px rgba(15,42,74,0.08);
@@ -39,6 +39,7 @@
   .tagline-bar{max-width:1320px;margin:0 auto;text-align:right;padding:4px 0 10px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
   .tagline{display:block;font-size:12.5px;font-weight:700;color:var(--gold);letter-spacing:.02em;}
   .mock-banner{background:var(--gold);color:#3a2a05;text-align:center;padding:8px 16px;font-size:13px;font-weight:600;}
+  .birthday-header-banner{max-width:1320px;margin:6px auto 0;background:linear-gradient(90deg,var(--gold),var(--orange));color:#3a2a05;text-align:center;padding:9px 16px;border-radius:10px;font-weight:700;font-size:13.5px;}
 
   main{max-width:1320px;margin:0 auto;padding:26px 20px 60px;}
   .view{display:none;}
@@ -63,6 +64,8 @@
   .podium{display:flex;gap:16px;align-items:flex-end;margin-top:16px;flex-wrap:wrap;}
   .podium-card{flex:1;min-width:180px;background:var(--card);border-radius:16px;padding:18px;text-align:center;box-shadow:var(--shadow);border:2px solid transparent;position:relative;}
   .podium-card.p1{border-color:var(--gold);transform:scale(1.05);}
+  .podium-card.all-gold{border-color:var(--gold);}
+  .podium-card.all-gold .podium-name{color:var(--gold);}
   .medal{font-size:30px;}
   .podium-name{font-weight:700;font-size:15px;margin-top:6px;}
   .podium-val{font-size:20px;font-weight:800;color:var(--navy);margin-top:4px;}
@@ -72,7 +75,8 @@
   .mention-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;box-shadow:var(--shadow);}
   .mention-rank{font-size:11px;font-weight:800;color:#fff;background:var(--purple);display:inline-block;padding:2px 9px;border-radius:20px;}
   .mention-name{font-weight:700;font-size:13px;margin-top:8px;}
-  .mention-val{font-size:13px;color:var(--navy);font-weight:700;margin-top:2px;}
+  .mention-val{font-size:13px;font-weight:700;margin-top:2px;}
+  .mention-caption{text-align:center;color:var(--navy);font-weight:700;font-size:13.5px;margin-top:16px;}
 
   /* ---------- Tables ---------- */
   .table-card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;margin-top:14px;overflow-x:auto;}
@@ -81,6 +85,9 @@
   tbody td{padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover{background:#F5F9FF;}
+  tr.rank-green td{background:#E9FBF3;}
+  tr.rank-yellow td{background:#FFF7E3;}
+  tr.rank-red td{background:#FDEBEC;}
   .num{font-variant-numeric:tabular-nums;}
   .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;}
   .badge.top{background:#E3F7EE;color:var(--green);}
@@ -182,6 +189,7 @@
       <button class="refresh-btn" id="refreshBtn">⟳ Actualizar</button>
     </div>
   </div>
+  <div id="birthdayBanner" class="birthday-header-banner" style="display:none;"></div>
   <div class="tagline-bar">
     <span class="tagline">❤️‍🔥 Los putos amos ❤️‍🔥</span>
     <span class="tagline">🏆 Mentalidad . Disciplina. Resultados 👑</span>
@@ -203,6 +211,11 @@
     <div class="section-title">⭐ Mención especial</div>
     <div class="section-sub">Puestos 4 al 10 del acumulado — también están dando la milla extra.</div>
     <div class="mention-grid" id="mentionGrid"></div>
+    <div class="mention-caption">🏆 Cada venta cuenta. ¡Sigamos así!</div>
+
+    <div class="section-title">📊 Ranking Acumulado del Equipo</div>
+    <div class="section-sub">Los 13 asesores ordenados por Net Revenue acumulado — verde: top performers, amarillo: constantes, rojo: necesita apoyo.</div>
+    <div class="table-card"><div id="accumRankingTable"></div></div>
 
     <div class="section-title">📅 Vista mes a mes por asesor</div>
     <div class="filter-row">
@@ -274,14 +287,17 @@
 
     <div class="kpi-grid" id="mensualKpis"></div>
 
-    <div class="section-title">🏅 Rankings del mes</div>
-    <div class="kpi-grid" id="mensualRankings"></div>
-
     <div class="section-title">🎯 Cumplimiento de equipo</div>
     <div class="kpi-grid" id="mensualCumplimiento"></div>
 
+    <div class="section-title">🏅 Rankings del mes</div>
+    <div class="kpi-grid" id="mensualRankings"></div>
+
     <div class="section-title">🏆 Top 3 del mes</div>
     <div class="podium" id="mensualPodium"></div>
+
+    <div class="section-title">💡 Insights del mes</div>
+    <div class="message-box" id="mensualInsights"></div>
 
     <div class="section-title">📋 Detalle de todos los asesores</div>
     <div class="table-card"><div id="mensualTable"></div></div>
@@ -309,6 +325,7 @@ const CONFIG = {
 };
 
 const MONTH_ORDER = ["Abril 2026","Mayo 2026","Junio 2026","Julio 2026","Agosto 2026"];
+const MESES_MAP = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};
 
 /* =========================================================================
    MOCK_DATA — dataset real transcrito del Sheet "Team Kei🔥"
@@ -397,11 +414,45 @@ let DATA = null;
 let currentAsesor = null;
 let currentCalcModel = "nuevo";
 let advisorCharts = [];
+let TRM_COP = null; // Tasa Representativa del Mercado (COP por USD) del día
 
 /* ----------------------------- Utilidades ----------------------------- */
 const fmtMoney = n => (n===null||n===undefined||n==="") ? "—" : "$" + Math.round(n).toLocaleString("es-CO");
+const fmtCOP = n => (n===null||n===undefined||n==="") ? "—" : "$" + Math.round(n).toLocaleString("es-CO") + " COP";
 const fmtPct = n => (n===null||n===undefined||n==="") ? "—" : n.toFixed(1) + "%";
 const initials = name => name.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+
+// Normaliza los valores de "mes" (recorta espacios y respeta mayúsculas/minúsculas
+// de MONTH_ORDER) para que Historico_Elite y KPIs_Mensuales siempre calcen aunque
+// alguna celda tenga espacios extra o distinta capitalización.
+function canonicalizeMes(raw){
+  const norm = String(raw||"").trim().toLowerCase();
+  const found = MONTH_ORDER.find(m => m.toLowerCase() === norm);
+  return found || String(raw||"").trim();
+}
+function normalizeMonthFields(data){
+  if(data && data.historico) data.historico.forEach(h=>{ h.mes = canonicalizeMes(h.mes); });
+  if(data && data.kpis) data.kpis.forEach(k=>{ k.mes = canonicalizeMes(k.mes); });
+  return data;
+}
+
+// TRM (COP por USD) publicada por datos.gov.co (Superfinanciera) — se usa para
+// convertir las comisiones calculadas de USD a pesos colombianos.
+async function fetchTRM(){
+  try{
+    const res = await fetch("https://www.datos.gov.co/resource/mcec-87by.json?$order=vigenciadesde%20DESC&$limit=1", {cache:"no-store"});
+    const arr = await res.json();
+    if(arr && arr[0] && arr[0].valor){
+      TRM_COP = parseFloat(arr[0].valor);
+    }
+  }catch(err){
+    console.error("No se pudo obtener la TRM del día:", err);
+  }
+  if(DATA && currentAsesor){
+    if(currentCalcModel==="nuevo" && document.getElementById("nNR")) calcNuevo();
+    else if(currentCalcModel==="anterior" && document.getElementById("aNR")) calcAnterior();
+  }
+}
 
 function closedMonths(){ return DATA.kpis.filter(k=>k.estado==="Cerrado").map(k=>k.mes); }
 function allMonths(){ return DATA.kpis.map(k=>k.mes); }
@@ -421,6 +472,13 @@ function historyFor(asesor){
     .sort((a,b)=>MONTH_ORDER.indexOf(a.mes)-MONTH_ORDER.indexOf(b.mes));
 }
 
+// Solo meses CERRADOS y activos — un mes en curso (parcial) no debe
+// contar en contra de la racha, la clasificación ni el mensaje del mes.
+function historyForClosed(asesor){
+  const closed = closedMonths();
+  return historyFor(asesor).filter(h=>h.activo==="TRUE" && closed.indexOf(h.mes)!==-1);
+}
+
 function trendIcon(curr, prev){
   if(prev===null||prev===undefined) return {icon:"⏩🟡 nuevo",cls:"trend-flat"};
   const diff = curr - prev;
@@ -430,7 +488,7 @@ function trendIcon(curr, prev){
 }
 
 function classify(asesor){
-  const hist = historyFor(asesor).filter(h=>h.activo==="TRUE");
+  const hist = historyForClosed(asesor);
   if(!hist.length) return {label:"Sin datos",cls:"mid"};
   const avg = hist.reduce((s,h)=>s+h.pct_cumplimiento,0)/hist.length;
   if(avg >= CONFIG.CLASSIFICATION.topMin) return {label:"🏆 Top Performer",cls:"top"};
@@ -439,7 +497,7 @@ function classify(asesor){
 }
 
 function streak(asesor){
-  const hist = historyFor(asesor).filter(h=>h.activo==="TRUE");
+  const hist = historyForClosed(asesor);
   let s = 0;
   for(let i=hist.length-1;i>=0;i--){
     if(hist[i].pct_cumplimiento >= CONFIG.STREAK_MIN) s++; else break;
@@ -455,10 +513,36 @@ function nextTier(revenueAcum){
   return null;
 }
 
+/* ----------------------------- Cumpleaños del día ----------------------------- */
+function todaysBirthdays(){
+  const today = new Date();
+  const d = today.getDate();
+  const m = today.getMonth();
+  return (DATA.roster||[]).filter(r=>{
+    if(!r.cumpleanos) return false;
+    const parts = String(r.cumpleanos).trim().toLowerCase().split(" ");
+    const day = parseInt(parts[0],10);
+    const mesNum = MESES_MAP[parts[1]];
+    return day===d && mesNum===m;
+  });
+}
+
+function renderBirthdayBanner(){
+  const el = document.getElementById("birthdayBanner");
+  if(!el) return;
+  const cumples = todaysBirthdays();
+  if(cumples.length){
+    el.style.display = "block";
+    el.textContent = "🎉🎂 ¡Feliz cumpleaños " + cumples.map(c=>c.asesor).join(" y ") + "! Todo TEAM KEI te desea un año increíble 🔥";
+  } else {
+    el.style.display = "none";
+  }
+}
+
 /* ----------------------------- Mensaje personalizado ----------------------------- */
 function personalizedMessage(asesor){
-  const hist = historyFor(asesor).filter(h=>h.activo==="TRUE");
-  if(!hist.length) return { accion:"Todavía no hay meses activos registrados.", motivacion:"Cada gran cierre empieza con la primera llamada — bienvenido(a) al equipo, aquí confiamos en tu proceso." };
+  const hist = historyForClosed(asesor);
+  if(!hist.length) return { accion:"Todavía no hay meses cerrados registrados.", motivacion:"Cada gran cierre empieza con la primera llamada — bienvenido(a) al equipo, aquí confiamos en tu proceso." };
   const last = hist[hist.length-1];
   const prev = hist.length>1? hist[hist.length-2] : null;
   const up = prev? (last.pct_cumplimiento > prev.pct_cumplimiento) : null;
@@ -467,24 +551,24 @@ function personalizedMessage(asesor){
   let accion, motivacion;
 
   if (cls==="top" && (up===true||up===null)) {
-    accion = `Vas en ${fmtPct(last.pct_cumplimiento)} de tu meta y subiendo — mantené el ritmo de agenda calificada de las últimas semanas.`;
+    accion = `En ${last.mes} cerraste en ${fmtPct(last.pct_cumplimiento)} de tu meta y subiendo — mantené el ritmo de agenda calificada.`;
     motivacion = "Ya demostraste que podés estar arriba — esto no te va a quedar grande, seguí así 🔥";
   } else if (cls==="top" && up===false) {
-    accion = `Bajaste un poco frente al mes anterior (${fmtPct(last.pct_cumplimiento)} vs ${fmtPct(prev.pct_cumplimiento)}) — revisá tu agenda de la primera semana del mes, ahí se define el ritmo.`;
+    accion = `Bajaste un poco frente al mes anterior (${fmtPct(last.pct_cumplimiento)} vs ${fmtPct(prev.pct_cumplimiento)} en ${prev.mes}) — revisá tu agenda de la primera semana del mes, ahí se define el ritmo.`;
     motivacion = "Un mes flojo no borra tu historial — ya lo lograste antes, hacelo de nuevo 💪";
   } else if (cls==="mid" && (up===true||up===null)) {
-    accion = `Vas mejorando (${fmtPct(last.pct_cumplimiento)}) — con un poco más de volumen calificado llegás a Top Performer este mes.`;
+    accion = `Vas mejorando (${fmtPct(last.pct_cumplimiento)} en ${last.mes}) — con un poco más de volumen calificado llegás a Top Performer.`;
     motivacion = "Se nota el esfuerzo constante — confiá en tu proceso, el salto está cerca.";
   } else if (cls==="mid" && up===false) {
     accion = `Bajaste frente al mes pasado (${fmtPct(last.pct_cumplimiento)} vs ${fmtPct(prev.pct_cumplimiento)}) — revisá si es volumen de agenda o conversión y ajustá esta semana.`;
     motivacion = "Tenés el historial para levantarlo — ya lo hiciste antes, podés romper la racha.";
   } else {
-    accion = `Este mes estás en ${fmtPct(last.pct_cumplimiento)} de meta — enfoquémonos en agenda calificada y seguimiento diario esta semana.`;
+    accion = `En ${last.mes} cerraste en ${fmtPct(last.pct_cumplimiento)} de meta — enfoquémonos en agenda calificada y seguimiento diario esta semana.`;
     motivacion = "Cada racha mala se rompe con constancia, no con perfección — has podido antes, esto no te va a quedar grande.";
   }
 
   if (last.referidos===0 && last.pct_cumplimiento>=80) {
-    accion += ` Te falta solo 1 referido este mes para sumar el bono — ya tenés la meta encaminada.`;
+    accion += ` Te faltó solo 1 referido en ${last.mes} para sumar el bono — la próxima ya la tenés encaminada.`;
   }
 
   return {accion, motivacion};
@@ -521,8 +605,10 @@ function renderOverview(){
     <div class="mention-card">
       <span class="mention-rank">#${i+4}</span>
       <div class="mention-name">${r[0]}</div>
-      <div class="mention-val">${fmtMoney(r[1])}</div>
+      <div class="mention-val" style="color:${i%2===0?'var(--orange)':'var(--blue)'};">${fmtMoney(r[1])}</div>
     </div>`).join("") || `<div class="empty">No hay suficientes asesores.</div>`;
+
+  renderAccumRankingTable(ranked);
 
   const monthSel = document.getElementById("overviewMonthSelect");
   monthSel.innerHTML = allMonths().map(m=>`<option value="${m}">${m}</option>`).join("");
@@ -533,6 +619,23 @@ function renderOverview(){
   renderBands(monthSel.value);
   renderPeriodMessage(monthSel.value);
   renderReferralRanking();
+}
+
+// Ranking de los 13 asesores por NR acumulado: top4 verde, siguientes 4 amarillo, últimos 5 rojo.
+function renderAccumRankingTable(rankedIn){
+  const totals = {};
+  DATA.historico.forEach(h=>{ totals[h.asesor] = (totals[h.asesor]||0) + h.revenue; });
+  const ranked = rankedIn || Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const n = ranked.length;
+  const html = `<table><thead><tr><th>#</th><th>Asesor</th><th>NR Acumulado</th><th>Estado</th></tr></thead>
+    <tbody>${ranked.map((r,i)=>{
+      let cls, tag;
+      if(i < 4){ cls="rank-green"; tag="🏆 Top Performer"; }
+      else if(i < 8){ cls="rank-yellow"; tag="💪 Constante"; }
+      else { cls="rank-red"; tag="🧭 Necesita apoyo"; }
+      return `<tr class="${cls}"><td>${i+1}</td><td>${r[0]}</td><td class="num">${fmtMoney(r[1])}</td><td>${tag}</td></tr>`;
+    }).join("")}</tbody></table>`;
+  document.getElementById("accumRankingTable").innerHTML = html;
 }
 
 function renderOverviewMonthly(mes){
@@ -780,12 +883,17 @@ function calcNuevo(){
   else refBonus = DATA.nuevoModelo.referidos.primero + Math.max(0,refs-1)*DATA.nuevoModelo.referidos.resto;
   const total = comisionVariable + fijo + refBonus;
   const comisionPromedio = pagos>0 ? total/pagos : 0;
+  const totalCOP = TRM_COP ? total * TRM_COP : null;
   document.getElementById("nResult").innerHTML = `
     <div class="amount">${fmtMoney(total)}</div>
     <div class="breakdown">
       Tier alcanzado: <b>${achieved? achieved.tier + " (" + fmtPct(achieved.pct_comision*100) + ")" : "Ninguno aún"}</b><br>
       Comisión variable: ${fmtMoney(comisionVariable)} · Fijo mensual: ${fmtMoney(fijo)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refs===0?' (0 referidos = -$100)':''}<br>
       <b>Comisión promedio por venta:</b> ${pagos>0? fmtMoney(comisionPromedio) : "—"} ${pagos>0? `(tasa efectiva ${fmtPct(nr? total/nr*100 : 0)} sobre tu NR)`:''}
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);font-size:12.5px;color:#B9D3EC;">
+      💱 En pesos colombianos ${TRM_COP? '(TRM del día: $'+TRM_COP.toLocaleString('es-CO')+' COP/USD)':''}<br>
+      <b style="color:#fff;font-size:17px;">${totalCOP!==null? fmtCOP(totalCOP) : "Cargando TRM del día…"}</b>
     </div>`;
 }
 
@@ -797,14 +905,19 @@ function calcAnterior(){
   const pct = meta? (nr/meta*100) : 0;
   const banda = DATA.modeloAnterior.bandas.find(b=>pct>=b.min && pct<=b.max) || DATA.modeloAnterior.bandas[0];
   const comision = nr * banda.comision_pct;
-  const refBonus = refs>0 ? 50 + Math.max(0,refs-1)*100 : 0;
+  const refBonus = refs>0 ? 50 + Math.max(0,refs-1)*100 : -100;
   const cashFinal = comision + refBonus + salario;
+  const cashFinalCOP = TRM_COP ? cashFinal * TRM_COP : null;
   document.getElementById("aResult").innerHTML = `
     <div class="amount">${fmtMoney(cashFinal)}</div>
     <div class="breakdown">
       % Cumplimiento semanal: <b>${fmtPct(pct)}</b> → banda ${fmtPct(banda.comision_pct*100)}<br>
-      Comisión: ${fmtMoney(comision)} · Bono referidos: ${fmtMoney(refBonus)} · Salario base: ${fmtMoney(salario)}<br>
+      Comisión: ${fmtMoney(comision)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refs===0?' (0 referidos = -$100)':''} · Salario base: ${fmtMoney(salario)}<br>
       <b>Cash final = comisión + bono referidos + salario</b>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);font-size:12.5px;color:#B9D3EC;">
+      💱 En pesos colombianos ${TRM_COP? '(TRM del día: $'+TRM_COP.toLocaleString('es-CO')+' COP/USD)':''}<br>
+      <b style="color:#fff;font-size:17px;">${cashFinalCOP!==null? fmtCOP(cashFinalCOP) : "Cargando TRM del día…"}</b>
     </div>`;
 }
 
@@ -829,6 +942,20 @@ function renderMensual(mes){
 
   const rows = DATA.historico.filter(h=>h.mes===mes && h.activo==="TRUE");
 
+  const metaRefObj = metaReferidos(mes);
+  const refLogrado = metaRefObj ? metaRefObj.logrado : kpi.referidos;
+  let refEstado = "—";
+  if(metaRefObj && metaRefObj.meta){
+    const refPct = refLogrado/metaRefObj.meta*100;
+    if(refPct>=100) refEstado = "🎉 Meta cumplida";
+    else if(refPct>=50) refEstado = "🙂 Vamos bien";
+    else refEstado = "🔻 Necesita impulso";
+  }
+  document.getElementById("mensualCumplimiento").innerHTML = `
+    <div class="kpi-card accent"><div class="label">Cumplimiento en Revenue</div><div class="value">${kpi.estado==="En curso"?"En curso":fmtPct(kpi.cumplimiento_pct)}</div><div class="sub">${fmtMoney(kpi.recaudado)} / ${fmtMoney(kpi.meta)}</div></div>
+    <div class="kpi-card" style="border-top:4px solid var(--gold);"><div class="label">Cumplimiento en Referidos</div><div class="value">${refLogrado} / ${metaRefObj? metaRefObj.meta : "—"}</div><div class="sub">${refEstado}</div></div>
+  `;
+
   const crCount = rows.filter(h=>h.cr_pct>CONFIG.CR_RANKING_MIN).length;
   const count100 = rows.filter(h=>h.pct_cumplimiento>=100).length;
   const count22k = rows.filter(h=>h.revenue>CONFIG.REVENUE_RANKING_MIN).length;
@@ -839,23 +966,17 @@ function renderMensual(mes){
     <div class="kpi-card" style="border-top:4px solid var(--pink);"><div class="label">Revenue &gt; ${fmtMoney(CONFIG.REVENUE_RANKING_MIN)}</div><div class="value">${count22k}</div><div class="sub">de ${rows.length} asesores activos</div></div>
   `;
 
-  const metaRefObj = metaReferidos(mes);
-  const refLogrado = metaRefObj ? metaRefObj.logrado : kpi.referidos;
-  const refPct = (metaRefObj && metaRefObj.meta) ? (refLogrado/metaRefObj.meta*100) : null;
-  document.getElementById("mensualCumplimiento").innerHTML = `
-    <div class="kpi-card accent"><div class="label">Cumplimiento en Revenue</div><div class="value">${kpi.estado==="En curso"?"En curso":fmtPct(kpi.cumplimiento_pct)}</div><div class="sub">${fmtMoney(kpi.recaudado)} / ${fmtMoney(kpi.meta)}</div></div>
-    <div class="kpi-card" style="border-top:4px solid var(--gold);"><div class="label">Cumplimiento en Referidos</div><div class="value">${refPct!==null? fmtPct(refPct) : "—"}</div><div class="sub">${refLogrado} / ${metaRefObj? metaRefObj.meta : "—"} meta</div></div>
-  `;
-
   const rowsRanked = [...rows].sort((a,b)=>b.revenue-a.revenue);
   const medals=["🥇","🥈","🥉"];
   document.getElementById("mensualPodium").innerHTML = rowsRanked.slice(0,3).map((h,i)=>`
-    <div class="podium-card ${i===0?'p1':''}">
+    <div class="podium-card all-gold ${i===0?'p1':''}">
       <div class="medal">${medals[i]}</div>
       <div class="podium-name">${h.asesor}</div>
       <div class="podium-val">${fmtMoney(h.revenue)}</div>
       <div class="podium-sub">${fmtPct(h.pct_cumplimiento)} de meta</div>
     </div>`).join("") || `<div class="empty">Sin datos para este mes.</div>`;
+
+  renderMensualInsights(mes, rows);
 
   document.getElementById("mensualTable").innerHTML = rowsRanked.length ? `
     <table><thead><tr><th>#</th><th>Asesor</th><th>Meta</th><th>NR</th><th>% Cumpl.</th><th>Meetings</th><th>Ventas</th><th>CR</th><th>Refs</th></tr></thead>
@@ -863,6 +984,50 @@ function renderMensual(mes){
       <td>${i+1}</td><td>${h.asesor}</td><td class="num">${fmtMoney(h.meta)}</td><td class="num">${fmtMoney(h.revenue)}</td>
       <td class="num">${fmtPct(h.pct_cumplimiento)}</td><td class="num">${h.meetings||"—"}</td><td class="num">${h.ventas}</td><td class="num">${fmtPct(h.cr_pct)}</td><td class="num">🤝🏻 ${h.referidos}</td>
     </tr>`).join("")}</tbody></table>` : `<div class="empty">Sin asesores activos este mes.</div>`;
+}
+
+// Insights automáticos del mes seleccionado — top performer, más mejorado, mejor CR,
+// más referidos y alerta de asesores en zona roja.
+function renderMensualInsights(mes, rowsIn){
+  const el = document.getElementById("mensualInsights");
+  const rows = rowsIn || DATA.historico.filter(h=>h.mes===mes && h.activo==="TRUE");
+  if(!rows.length){ el.innerHTML = `<div class="line">Sin datos suficientes para generar insights este mes.</div>`; return; }
+
+  const idx = MONTH_ORDER.indexOf(mes);
+  const prevMes = idx>0? MONTH_ORDER[idx-1] : null;
+
+  const top = [...rows].sort((a,b)=>b.revenue-a.revenue)[0];
+  const bestCR = [...rows].sort((a,b)=>b.cr_pct-a.cr_pct)[0];
+  const mostRefs = [...rows].sort((a,b)=>b.referidos-a.referidos)[0];
+
+  let mostImproved = null, maxDelta = -Infinity;
+  rows.forEach(h=>{
+    const prev = prevMes? DATA.historico.find(x=>x.asesor===h.asesor && x.mes===prevMes && x.activo==="TRUE") : null;
+    if(prev){
+      const delta = h.pct_cumplimiento - prev.pct_cumplimiento;
+      if(delta > maxDelta){ maxDelta = delta; mostImproved = {h, delta, prev}; }
+    }
+  });
+
+  const enRiesgo = rows.filter(h=>h.pct_cumplimiento<60);
+
+  let html = "";
+  html += `<div class="line">🏆 <strong>${top.asesor}</strong> lideró el mes con ${fmtMoney(top.revenue)} (${fmtPct(top.pct_cumplimiento)} de meta).</div>`;
+  if(mostImproved && mostImproved.delta>0){
+    html += `<div class="line">📈 <strong>${mostImproved.h.asesor}</strong> tuvo el mayor salto vs. el mes anterior: +${mostImproved.delta.toFixed(1)} pts (${fmtPct(mostImproved.prev.pct_cumplimiento)} → ${fmtPct(mostImproved.h.pct_cumplimiento)}).</div>`;
+  }
+  if(bestCR && bestCR.cr_pct>0){
+    html += `<div class="line">🎯 <strong>${bestCR.asesor}</strong> tuvo el mejor CR del mes: ${fmtPct(bestCR.cr_pct)}.</div>`;
+  }
+  if(mostRefs && mostRefs.referidos>0){
+    html += `<div class="line">🤝🏻 <strong>${mostRefs.asesor}</strong> trajo más referidos este mes: ${mostRefs.referidos}.</div>`;
+  }
+  if(enRiesgo.length){
+    html += `<div class="line">⚠️ En zona roja (&lt;60%): <strong>${enRiesgo.map(h=>h.asesor).join(", ")}</strong> — vale la pena un check-in esta semana.</div>`;
+  } else {
+    html += `<div class="line">✅ Nadie está en zona roja este mes — buen nivel general del equipo.</div>`;
+  }
+  el.innerHTML = html;
 }
 
 /* ----------------------------- Navegación ----------------------------- */
@@ -898,6 +1063,7 @@ async function loadData(){
       document.getElementById("mockBanner").style.display = "block";
     }
   }
+  normalizeMonthFields(DATA);
   document.getElementById("lastUpdated").textContent = "Actualizado: " + new Date(DATA.generadoEn || Date.now()).toLocaleString("es-CO");
   renderAll();
 
@@ -905,6 +1071,7 @@ async function loadData(){
 }
 
 function renderAll(){
+  renderBirthdayBanner();
   renderOverview();
   renderPerfilSelector();
   renderMensualSelector();
@@ -913,6 +1080,8 @@ function renderAll(){
 document.getElementById("refreshBtn").onclick = loadData;
 setInterval(loadData, CONFIG.REFRESH_MS);
 loadData();
+fetchTRM();
+setInterval(fetchTRM, 6 * 60 * 60 * 1000); // refresca la TRM cada 6 horas
 </script>
 </body>
 </html>
