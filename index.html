@@ -73,7 +73,7 @@
 
   .mention-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px;}
   .mention-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;box-shadow:var(--shadow);}
-  .mention-rank{font-size:11px;font-weight:800;color:#fff;background:var(--purple);display:inline-block;padding:2px 9px;border-radius:20px;}
+  .mention-rank{font-size:13px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;}
   .mention-name{font-weight:700;font-size:13px;margin-top:8px;}
   .mention-val{font-size:13px;font-weight:700;margin-top:2px;}
   .mention-caption{text-align:center;color:var(--navy);font-weight:700;font-size:13.5px;margin-top:16px;}
@@ -162,6 +162,11 @@
   .calc-result .amount{font-size:30px;font-weight:800;}
   .calc-result .breakdown{font-size:12.5px;color:#B9D3EC;margin-top:8px;line-height:1.6;}
   .calc-result .breakdown b{color:#fff;}
+
+  .elite-banner{position:relative;margin-top:20px;background:linear-gradient(135deg,var(--orange),var(--orange-light));color:#fff;border-radius:20px;padding:20px 22px;box-shadow:var(--shadow-lg);}
+  .elite-banner::before{content:"";position:absolute;top:-10px;left:36px;width:20px;height:20px;background:var(--orange);transform:rotate(45deg);border-radius:4px;}
+  .elite-banner-title{font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;letter-spacing:.02em;margin-bottom:8px;}
+  .elite-banner p{margin:0;font-size:13.5px;line-height:1.6;color:rgba(255,255,255,.95);}
 
   footer{text-align:center;padding:26px;color:var(--muted);font-size:12px;}
   .empty{padding:30px;text-align:center;color:var(--muted);font-size:13px;}
@@ -271,6 +276,11 @@
           <div class="calc-btn" id="btnCalcAnterior">🧮 Calcular Modelo Anterior</div>
         </div>
         <div class="calc-panel" id="calcPanel"></div>
+
+        <div class="elite-banner">
+          <div class="elite-banner-title">🏆 ERES PARTE ELITE TEAM</div>
+          <p>Aquí no nos rendimos. Pensamos en grande, cuidamos nuestra mentalidad, trabajamos con disciplina y confiamos en Dios. Los resultados son consecuencia de nuestras acciones diarias.</p>
+        </div>
       </div>
     </div>
 
@@ -422,13 +432,21 @@ const fmtCOP = n => (n===null||n===undefined||n==="") ? "—" : "$" + Math.round
 const fmtPct = n => (n===null||n===undefined||n==="") ? "—" : n.toFixed(1) + "%";
 const initials = name => name.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
 
-// Normaliza los valores de "mes" (recorta espacios y respeta mayúsculas/minúsculas
-// de MONTH_ORDER) para que Historico_Elite y KPIs_Mensuales siempre calcen aunque
-// alguna celda tenga espacios extra o distinta capitalización.
+// Normaliza los valores de "mes" (recorta espacios, respeta mayúsculas/minúsculas
+// de MONTH_ORDER, y convierte fechas ISO tipo "2026-08-01T05:00:00.000Z" —que
+// aparecen si la celda de Sheets quedó guardada como fecha— a "Agosto 2026").
+const MESES_ES_CAP = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 function canonicalizeMes(raw){
-  const norm = String(raw||"").trim().toLowerCase();
+  const str = String(raw||"").trim();
+  const norm = str.toLowerCase();
   const found = MONTH_ORDER.find(m => m.toLowerCase() === norm);
-  return found || String(raw||"").trim();
+  if(found) return found;
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(isoMatch){
+    const monthIdx = parseInt(isoMatch[2],10)-1;
+    if(MESES_ES_CAP[monthIdx]) return MESES_ES_CAP[monthIdx] + " " + isoMatch[1];
+  }
+  return str;
 }
 function normalizeMonthFields(data){
   if(data && data.historico) data.historico.forEach(h=>{ h.mes = canonicalizeMes(h.mes); });
@@ -594,19 +612,23 @@ function renderOverview(){
   const ranked = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
   const medals = ["🥇","🥈","🥉"];
   document.getElementById("overviewPodium").innerHTML = ranked.slice(0,3).map((r,i)=>`
-    <div class="podium-card ${i===0?'p1':''}">
+    <div class="podium-card all-gold ${i===0?'p1':''}">
       <div class="medal">${medals[i]}</div>
       <div class="podium-name">${r[0]}</div>
       <div class="podium-val">${fmtMoney(r[1])}</div>
       <div class="podium-sub">acumulado 2026</div>
     </div>`).join("");
 
-  document.getElementById("mentionGrid").innerHTML = ranked.slice(3,10).map((r,i)=>`
+  document.getElementById("mentionGrid").innerHTML = ranked.slice(3,10).map((r,i)=>{
+    const badgeBg = i%2===0 ? 'var(--navy)' : 'var(--orange)';
+    const badgeColor = i%2===0 ? 'var(--orange)' : 'var(--navy)';
+    return `
     <div class="mention-card">
-      <span class="mention-rank">#${i+4}</span>
+      <span class="mention-rank" style="background:${badgeBg};color:${badgeColor};">${i+4}</span>
       <div class="mention-name">${r[0]}</div>
       <div class="mention-val" style="color:${i%2===0?'var(--orange)':'var(--blue)'};">${fmtMoney(r[1])}</div>
-    </div>`).join("") || `<div class="empty">No hay suficientes asesores.</div>`;
+    </div>`;
+  }).join("") || `<div class="empty">No hay suficientes asesores.</div>`;
 
   renderAccumRankingTable(ranked);
 
@@ -888,7 +910,8 @@ function calcNuevo(){
     <div class="amount">${fmtMoney(total)}</div>
     <div class="breakdown">
       Tier alcanzado: <b>${achieved? achieved.tier + " (" + fmtPct(achieved.pct_comision*100) + ")" : "Ninguno aún"}</b><br>
-      Comisión variable: ${fmtMoney(comisionVariable)} · Fijo mensual: ${fmtMoney(fijo)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refs===0?' (0 referidos = -$100)':''}<br>
+      Comisión variable: ${fmtMoney(comisionVariable)} · Salario fijo mensual: ${fmtMoney(fijo)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refs===0?' (0 referidos = -$100)':''}<br>
+      <b>Total = ${fmtMoney(comisionVariable)} (comisión) + ${fmtMoney(fijo)} (salario fijo) + ${fmtMoney(refBonus)} (referidos) = ${fmtMoney(total)}</b><br>
       <b>Comisión promedio por venta:</b> ${pagos>0? fmtMoney(comisionPromedio) : "—"} ${pagos>0? `(tasa efectiva ${fmtPct(nr? total/nr*100 : 0)} sobre tu NR)`:''}
     </div>
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);font-size:12.5px;color:#B9D3EC;">
@@ -980,10 +1003,13 @@ function renderMensual(mes){
 
   document.getElementById("mensualTable").innerHTML = rowsRanked.length ? `
     <table><thead><tr><th>#</th><th>Asesor</th><th>Meta</th><th>NR</th><th>% Cumpl.</th><th>Meetings</th><th>Ventas</th><th>CR</th><th>Refs</th></tr></thead>
-    <tbody>${rowsRanked.map((h,i)=>`<tr>
+    <tbody>${rowsRanked.map((h,i)=>{
+      const cls = i<5 ? "rank-green" : (i<9 ? "rank-yellow" : "rank-red");
+      return `<tr class="${cls}">
       <td>${i+1}</td><td>${h.asesor}</td><td class="num">${fmtMoney(h.meta)}</td><td class="num">${fmtMoney(h.revenue)}</td>
       <td class="num">${fmtPct(h.pct_cumplimiento)}</td><td class="num">${h.meetings||"—"}</td><td class="num">${h.ventas}</td><td class="num">${fmtPct(h.cr_pct)}</td><td class="num">🤝🏻 ${h.referidos}</td>
-    </tr>`).join("")}</tbody></table>` : `<div class="empty">Sin asesores activos este mes.</div>`;
+    </tr>`;
+    }).join("")}</tbody></table>` : `<div class="empty">Sin asesores activos este mes.</div>`;
 }
 
 // Insights automáticos del mes seleccionado — top performer, más mejorado, mejor CR,
