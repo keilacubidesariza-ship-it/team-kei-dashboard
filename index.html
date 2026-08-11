@@ -928,7 +928,7 @@ function calcNuevo(){
 
   // Si el CR (conversión ventas/meetings) supera 13%, la comisión variable
   // se multiplica por 1.2 como bono de buena conversión.
-  const crBonusAplica = cr > 13 && comisionVariable > 0;
+  const crBonusAplica = cr >= 13 && comisionVariable > 0;
   if (crBonusAplica) comisionVariable = comisionVariable * 1.2;
 
   const fijo = DATA.nuevoModelo.fijoMensual;
