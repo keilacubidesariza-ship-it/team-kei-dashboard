@@ -880,7 +880,7 @@ function renderCalcPanel(){
         <div class="calc-field"><label>Net Revenue acumulado del mes ($)</label><input type="number" id="nNR" value="${last.revenue}"></div>
         <div class="calc-field"><label># Pagos (new students)</label><input type="number" id="nPagos" value="${last.ventas}"></div>
         <div class="calc-field"><label>Referidos este mes</label><input type="number" id="nRefs" value="${last.referidos}"></div>
-        <div class="calc-field"><label>CR / Conversión (ventas ÷ meetings, %)</label><input type="number" id="nCR" value="${last.cr_pct||0}"></div>
+        <div class="calc-field"><label>CR (%)</label><input type="number" id="nCR" value="${last.cr_pct||0}"></div>
       </div>
       <div class="calc-result" id="nResult"></div>`;
     ["nNR","nPagos","nRefs","nCR"].forEach(id=>document.getElementById(id).oninput = calcNuevo);
