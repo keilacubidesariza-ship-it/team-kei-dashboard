@@ -337,7 +337,7 @@ const CONFIG = {
 const MONTH_ORDER = ["Abril 2026","Mayo 2026","Junio 2026","Julio 2026","Agosto 2026"];
 const MESES_MAP = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};
 
-// Estos 4 asesores están en el Modelo Anterior — su barra de progreso en el
+// Estos 3 asesores están en el Modelo Anterior — su barra de progreso en el
 // perfil muestra meta fija de $5.000 de Net Revenue (100%) en vez del tier
 // del Modelo Nuevo. El resto del equipo sigue viendo el progreso a tiers.
 const MODELO_ANTERIOR_ASESORES = ["Carolina Reyes","Freddy Ospina","Karol Martinez"];
@@ -880,9 +880,10 @@ function renderCalcPanel(){
         <div class="calc-field"><label>Net Revenue acumulado del mes ($)</label><input type="number" id="nNR" value="${last.revenue}"></div>
         <div class="calc-field"><label># Pagos (new students)</label><input type="number" id="nPagos" value="${last.ventas}"></div>
         <div class="calc-field"><label>Referidos este mes</label><input type="number" id="nRefs" value="${last.referidos}"></div>
+        <div class="calc-field"><label>CR / Conversión (ventas ÷ meetings, %)</label><input type="number" id="nCR" value="${last.cr_pct||0}"></div>
       </div>
       <div class="calc-result" id="nResult"></div>`;
-    ["nNR","nPagos","nRefs"].forEach(id=>document.getElementById(id).oninput = calcNuevo);
+    ["nNR","nPagos","nRefs","nCR"].forEach(id=>document.getElementById(id).oninput = calcNuevo);
     calcNuevo();
   } else {
     document.getElementById("calcPanel").innerHTML = `
@@ -913,6 +914,8 @@ function calcNuevo(){
   const nr = parseFloat(document.getElementById("nNR").value)||0;
   const pagos = parseFloat(document.getElementById("nPagos").value)||0;
   const refs = parseFloat(document.getElementById("nRefs").value)||0;
+  const crEl = document.getElementById("nCR");
+  const cr = crEl ? (parseFloat(crEl.value)||0) : 0;
   const tiers = DATA.nuevoModelo.tiers;
   let achieved = null;
   for(const t of tiers){
@@ -921,7 +924,13 @@ function calcNuevo(){
     const bothRequired = t.condicion.indexOf("Ambas") === 0;
     if (bothRequired ? (nrOk && pagosOk) : nrOk) achieved = t;
   }
-  const comisionVariable = achieved ? nr * achieved.pct_comision : 0;
+  let comisionVariable = achieved ? nr * achieved.pct_comision : 0;
+
+  // Si el CR (conversión ventas/meetings) supera 13%, la comisión variable
+  // se multiplica por 1.2 como bono de buena conversión.
+  const crBonusAplica = cr > 13 && comisionVariable > 0;
+  if (crBonusAplica) comisionVariable = comisionVariable * 1.2;
+
   const fijo = DATA.nuevoModelo.fijoMensual;
 
   // La penalización de 0 referidos sale de la comisión, nunca del salario fijo;
@@ -943,6 +952,7 @@ function calcNuevo(){
     <div class="amount">${fmtMoney(total)}</div>
     <div class="breakdown">
       Tier alcanzado: <b>${achieved? achieved.tier + " (" + fmtPct(achieved.pct_comision*100) + ")" : "Ninguno aún"}</b><br>
+      ${crBonusAplica? `🎯 CR de ${fmtPct(cr)} supera 13% — comisión variable x1.2 aplicada<br>` : ''}
       Comisión variable: ${fmtMoney(comisionVariable)} · Salario fijo mensual: ${fmtMoney(fijo)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refNota}<br>
       <b>Total = ${fmtMoney(comisionVariable)} (comisión) + ${fmtMoney(fijo)} (salario fijo) + ${fmtMoney(refBonus)} (referidos) = ${fmtMoney(total)}</b><br>
       <b>Comisión promedio por venta:</b> ${pagos>0? fmtMoney(comisionPromedio) : "—"} ${pagos>0? `(tasa efectiva ${fmtPct(nr? total/nr*100 : 0)} sobre tu NR)`:''}
