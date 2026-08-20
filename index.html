@@ -285,11 +285,10 @@
           <div class="tier-grid" id="tierReachGrid"></div>
         </div>
 
-        <div class="calc-toggle">
+                <div class="calc-toggle" id="calcToggle">
           <div class="calc-btn active" id="btnCalcNuevo">✨ Calcular Modelo Nuevo</div>
           <div class="calc-btn" id="btnCalcAnterior">🧮 Calcular Modelo Anterior</div>
         </div>
-        <div class="calc-panel" id="calcPanel"></div>
 
         <div class="elite-banner">
           <div class="elite-banner-title">🏆 HACES PARTE DE TEAM ELITE</div>
@@ -354,7 +353,7 @@ const MESES_MAP = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agos
 // Estos 3 asesores están en el Modelo Anterior — su barra de progreso en el
 // perfil muestra meta fija de $5.000 de Net Revenue (100%) en vez del tier
 // del Modelo Nuevo. El resto del equipo sigue viendo el progreso a tiers.
-const MODELO_ANTERIOR_ASESORES = ["Carolina Reyes","Freddy Ospina","Karol Martinez"];
+const MODELO_ANTERIOR_ASESORES = ["Freddy Ospina","Karol Martinez"];
 
 /* =========================================================================
    MOCK_DATA — dataset real transcrito del Sheet "Team Kei🔥"
@@ -891,11 +890,18 @@ function renderPerfil(){
         <td class="num">${fmtPct(h.pct_cumplimiento)}</td><td class="num">${h.meetings||"—"}</td><td class="num">${h.ventas}</td><td class="num">${fmtPct(h.cr_pct)}</td>
         <td class="${tr.cls}">${tr.icon}</td><td class="num">🤝🏻 ${h.referidos}</td>
       </tr>`;
-    }).join("") || `<tr><td colspan="9" class="empty">Sin meses activos registrados</td></tr>`}</tbody></table>`;
+        }).join("") || `<tr><td colspan="9" class="empty">Sin meses activos registrados</td></tr>`}</tbody></table>`;
+
+  // Solo Freddy y Karol siguen en el Modelo Anterior — para ellos se fuerza esa
+  // calculadora y se oculta el switch. El resto del equipo ve directamente la
+  // calculadora del Modelo Nuevo, sin poder cambiar de modelo.
+  const esModeloAnterior = MODELO_ANTERIOR_ASESORES.indexOf(currentAsesor) !== -1;
+  currentCalcModel = esModeloAnterior ? "anterior" : "nuevo";
+  const calcToggle = document.getElementById("calcToggle");
+  if (calcToggle) calcToggle.style.display = "none";
 
   renderTierReach();
   renderCalcPanel();
-}
 
 // Calcula cuánto ganaría el asesor SI alcanzara un tier dado, usando su NR,
 // CR y referidos reales del mes (no lo que haya escrito en la calculadora).
