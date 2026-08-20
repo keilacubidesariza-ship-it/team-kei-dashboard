@@ -473,6 +473,27 @@ function normalizeMonthFields(data){
   return data;
 }
 
+// Normaliza "cumpleanos" del roster igual que los meses: si en el Sheet la
+// celda quedó guardada como fecha real de Google (en vez de texto "19 agosto"),
+// Apps Script la manda como ISO ("2026-08-19T05:00:00.000Z") y sin esto el
+// banner de cumpleaños nunca dispara para esa persona.
+const MESES_ES_LOWER = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+function canonicalizeCumpleanos(raw){
+  const str = String(raw||"").trim();
+  if(!str) return str;
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(isoMatch){
+    const day = parseInt(isoMatch[3],10);
+    const monthIdx = parseInt(isoMatch[2],10)-1;
+    if(MESES_ES_LOWER[monthIdx]) return day + " " + MESES_ES_LOWER[monthIdx];
+  }
+  return str;
+}
+function normalizeRosterFields(data){
+  if(data && data.roster) data.roster.forEach(r=>{ if(r.cumpleanos) r.cumpleanos = canonicalizeCumpleanos(r.cumpleanos); });
+  return data;
+}
+
 // TRM (COP por USD) publicada por datos.gov.co (Superfinanciera) — se usa para
 // convertir las comisiones calculadas de USD a pesos colombianos.
 async function fetchTRM(){
@@ -1238,7 +1259,8 @@ async function loadData(){
       document.getElementById("mockBanner").style.display = "block";
     }
   }
-  normalizeMonthFields(DATA);
+    normalizeMonthFields(DATA);
+  normalizeRosterFields(DATA);
   document.getElementById("lastUpdated").textContent = "Actualizado: " + new Date(DATA.generadoEn || Date.now()).toLocaleString("es-CO");
   renderAll();
 
