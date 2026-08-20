@@ -151,6 +151,14 @@
   .progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));border-radius:20px;transition:width .4s;}
   .birthday-banner{background:linear-gradient(135deg,var(--orange),var(--gold));color:#fff;padding:10px 14px;border-radius:12px;font-weight:600;font-size:13px;margin-bottom:14px;}
 
+  .tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+  .tier-card{background:var(--card);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);border:1px solid var(--border);}
+  .tier-card.reached{border-color:var(--gold);background:linear-gradient(135deg,#FFF8E6,#FFFFFF);}
+  .tier-head{font-weight:700;font-size:12.5px;}
+  .tier-head span{color:var(--muted);font-weight:600;font-size:11px;}
+  .tier-detail{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5;}
+  .tier-card.reached .tier-detail{color:var(--navy);}
+
   .calc-toggle{display:flex;gap:8px;margin-top:20px;}
   .calc-btn{flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-weight:700;font-size:13px;cursor:pointer;color:var(--navy);}
   .calc-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
@@ -165,6 +173,7 @@
 
   .elite-banner{position:relative;margin-top:20px;background:linear-gradient(135deg,var(--orange),var(--orange-light));color:#fff;border-radius:20px;padding:20px 22px;box-shadow:var(--shadow-lg);}
   .elite-banner::before{content:"";position:absolute;top:-10px;left:36px;width:20px;height:20px;background:var(--orange);transform:rotate(45deg);border-radius:4px;}
+  .elite-banner-logo{display:block;width:72px;height:72px;border-radius:50%;object-fit:cover;margin:0 auto 12px;box-shadow:0 4px 14px rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.5);}
   .elite-banner-title{font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;letter-spacing:.02em;margin-bottom:8px;text-align:center;}
   .elite-banner p{margin:0;font-size:13.5px;line-height:1.6;color:rgba(255,255,255,.95);text-align:center;}
 
@@ -270,6 +279,11 @@
       </div>
       <div>
         <div class="table-card"><div id="profileHistoryTable"></div></div>
+
+        <div id="tierReachSection" style="margin-top:16px;">
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px;">🎯 Alcance por Tier (con tu NR real de este mes)</div>
+          <div class="tier-grid" id="tierReachGrid"></div>
+        </div>
 
         <div class="calc-toggle">
           <div class="calc-btn active" id="btnCalcNuevo">✨ Calcular Modelo Nuevo</div>
@@ -858,7 +872,74 @@ function renderPerfil(){
       </tr>`;
     }).join("") || `<tr><td colspan="9" class="empty">Sin meses activos registrados</td></tr>`}</tbody></table>`;
 
+  renderTierReach();
   renderCalcPanel();
+}
+
+// Calcula cuánto ganaría el asesor SI alcanzara un tier dado, usando su NR,
+// CR y referidos reales del mes (no lo que haya escrito en la calculadora).
+function tierEarnings(last, t){
+  const nr = last.revenue || 0;
+  let comision = nr * t.pct_comision;
+  const cr = last.cr_pct || 0;
+  const crPenaliza = cr < 9.9 && comision > 0;
+  if (crPenaliza) comision = comision * 0.9;
+  const crBonus = cr >= 13 && comision > 0;
+  if (crBonus) comision = comision * 1.2;
+  const fijo = DATA.nuevoModelo.fijoMensual;
+  const refs = last.referidos || 0;
+  let refBonus;
+  if (refs === 0) {
+    const descuento = Math.min(100, comision);
+    refBonus = comision > 0 ? -descuento : 0;
+  } else {
+    refBonus = DATA.nuevoModelo.referidos.primero + Math.max(0, refs-1) * DATA.nuevoModelo.referidos.resto;
+  }
+  const total = comision + fijo + refBonus;
+  return { comision, fijo, refBonus, total, crPenaliza, crBonus };
+}
+
+// Barra de alcance por cada Tier del Modelo Nuevo — usa el último mes activo
+// real del asesor (no el simulador de la calculadora, que se puede modificar).
+function renderTierReach(){
+  const section = document.getElementById("tierReachSection");
+  const grid = document.getElementById("tierReachGrid");
+  if (!section || !grid) return;
+
+  if (MODELO_ANTERIOR_ASESORES.indexOf(currentAsesor) !== -1) {
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "";
+
+  const hist = historyFor(currentAsesor).filter(h=>h.activo==="TRUE");
+  const last = hist[hist.length-1] || {revenue:0, ventas:0, cr_pct:0, referidos:0};
+  const tiers = DATA.nuevoModelo.tiers;
+
+  grid.innerHTML = tiers.map(t=>{
+    const nrOk = last.revenue >= t.nr_min;
+    const pagosOk = last.ventas >= t.pagos_min;
+    const bothRequired = t.condicion.indexOf("Ambas") === 0;
+    const reached = bothRequired ? (nrOk && pagosOk) : nrOk;
+    const pct = Math.min(100, Math.round(last.revenue / t.nr_min * 100));
+
+    if (reached) {
+      const e = tierEarnings(last, t);
+      return `<div class="tier-card reached">
+        <div class="tier-head">🏆 ${t.tier} <span>(${fmtPct(t.pct_comision*100)})</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
+        <div class="tier-detail">Ganarías <b>${fmtMoney(e.total)}</b><br>Comisión ${fmtMoney(e.comision)}${e.crPenaliza?' (CR&lt;9.9%: x0.9)':''}${e.crBonus?' (CR≥13%: x1.2)':''} + Salario ${fmtMoney(e.fijo)} + Referidos ${fmtMoney(e.refBonus)}</div>
+      </div>`;
+    } else {
+      const faltaNR = Math.max(0, t.nr_min - last.revenue);
+      const faltaPagos = bothRequired ? Math.max(0, t.pagos_min - last.ventas) : 0;
+      return `<div class="tier-card">
+        <div class="tier-head">${t.tier} <span>(${fmtPct(t.pct_comision*100)})</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
+        <div class="tier-detail">Te faltan ${fmtMoney(faltaNR)} en NR${faltaPagos>0? ` y ${faltaPagos} pagos`:''}</div>
+      </div>`;
+    }
+  }).join("");
 }
 
 /* ----------------------------- Calculadoras ----------------------------- */
@@ -926,8 +1007,12 @@ function calcNuevo(){
   }
   let comisionVariable = achieved ? nr * achieved.pct_comision : 0;
 
-  // Si el CR (conversión ventas/meetings) supera 13%, la comisión variable
-  // se multiplica por 1.2 como bono de buena conversión.
+  // Ajustes de CR (conversión ventas/meetings) — aplican solo sobre la comisión,
+  // nunca sobre el salario fijo ni el bono de referidos:
+  // CR < 9.9%  -> se paga solo el 90% de la comisión
+  // CR >= 13%  -> la comisión se multiplica por 1.2 (bono de buena conversión)
+  const crPenalizaAplica = cr < 9.9 && comisionVariable > 0;
+  if (crPenalizaAplica) comisionVariable = comisionVariable * 0.9;
   const crBonusAplica = cr >= 13 && comisionVariable > 0;
   if (crBonusAplica) comisionVariable = comisionVariable * 1.2;
 
@@ -952,7 +1037,8 @@ function calcNuevo(){
     <div class="amount">${fmtMoney(total)}</div>
     <div class="breakdown">
       Tier alcanzado: <b>${achieved? achieved.tier + " (" + fmtPct(achieved.pct_comision*100) + ")" : "Ninguno aún"}</b><br>
-      ${crBonusAplica? `🎯 CR de ${fmtPct(cr)} supera 13% — comisión variable x1.2 aplicada<br>` : ''}
+      ${crPenalizaAplica? `⚠️ CR de ${fmtPct(cr)} (menor a 9.9%) — solo se paga 90% de la comisión<br>` : ''}
+      ${crBonusAplica? `🎯 CR de ${fmtPct(cr)} (13% o más) — comisión variable x1.2 aplicada<br>` : ''}
       Comisión variable: ${fmtMoney(comisionVariable)} · Salario fijo mensual: ${fmtMoney(fijo)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refNota}<br>
       <b>Total = ${fmtMoney(comisionVariable)} (comisión) + ${fmtMoney(fijo)} (salario fijo) + ${fmtMoney(refBonus)} (referidos) = ${fmtMoney(total)}</b><br>
       <b>Comisión promedio por venta:</b> ${pagos>0? fmtMoney(comisionPromedio) : "—"} ${pagos>0? `(tasa efectiva ${fmtPct(nr? total/nr*100 : 0)} sobre tu NR)`:''}
