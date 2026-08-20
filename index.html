@@ -285,10 +285,11 @@
           <div class="tier-grid" id="tierReachGrid"></div>
         </div>
 
-                <div class="calc-toggle" id="calcToggle">
+        <div class="calc-toggle" id="calcToggle">
           <div class="calc-btn active" id="btnCalcNuevo">✨ Calcular Modelo Nuevo</div>
           <div class="calc-btn" id="btnCalcAnterior">🧮 Calcular Modelo Anterior</div>
         </div>
+        <div class="calc-panel" id="calcPanel"></div>
 
         <div class="elite-banner">
           <div class="elite-banner-title">🏆 HACES PARTE DE TEAM ELITE</div>
@@ -350,7 +351,7 @@ const CONFIG = {
 const MONTH_ORDER = ["Abril 2026","Mayo 2026","Junio 2026","Julio 2026","Agosto 2026"];
 const MESES_MAP = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};
 
-// Estos 3 asesores están en el Modelo Anterior — su barra de progreso en el
+// Estos 4 asesores están en el Modelo Anterior — su barra de progreso en el
 // perfil muestra meta fija de $5.000 de Net Revenue (100%) en vez del tier
 // del Modelo Nuevo. El resto del equipo sigue viendo el progreso a tiers.
 const MODELO_ANTERIOR_ASESORES = ["Freddy Ospina","Karol Martinez"];
@@ -890,7 +891,7 @@ function renderPerfil(){
         <td class="num">${fmtPct(h.pct_cumplimiento)}</td><td class="num">${h.meetings||"—"}</td><td class="num">${h.ventas}</td><td class="num">${fmtPct(h.cr_pct)}</td>
         <td class="${tr.cls}">${tr.icon}</td><td class="num">🤝🏻 ${h.referidos}</td>
       </tr>`;
-        }).join("") || `<tr><td colspan="9" class="empty">Sin meses activos registrados</td></tr>`}</tbody></table>`;
+    }).join("") || `<tr><td colspan="9" class="empty">Sin meses activos registrados</td></tr>`}</tbody></table>`;
 
   // Solo Freddy y Karol siguen en el Modelo Anterior — para ellos se fuerza esa
   // calculadora y se oculta el switch. El resto del equipo ve directamente la
@@ -902,6 +903,7 @@ function renderPerfil(){
 
   renderTierReach();
   renderCalcPanel();
+}
 
 // Calcula cuánto ganaría el asesor SI alcanzara un tier dado, usando su NR,
 // CR y referidos reales del mes (no lo que haya escrito en la calculadora).
@@ -1265,7 +1267,7 @@ async function loadData(){
       document.getElementById("mockBanner").style.display = "block";
     }
   }
-    normalizeMonthFields(DATA);
+  normalizeMonthFields(DATA);
   normalizeRosterFields(DATA);
   document.getElementById("lastUpdated").textContent = "Actualizado: " + new Date(DATA.generadoEn || Date.now()).toLocaleString("es-CO");
   renderAll();
