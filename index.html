@@ -227,6 +227,15 @@
     <div class="mention-grid" id="mentionGrid"></div>
     <div class="mention-caption">🏆 Cada venta cuenta. ¡Sigamos así!</div>
 
+    <div class="section-title">🎯 Estado del equipo este mes</div>
+    <div class="section-sub">Cuánto le falta a cada quien para el próximo tier, si el CR le da bono o penalización, y su racha de referidos — de un vistazo.</div>
+    <div class="table-card"><div id="resumenAsesoresTable"></div></div>
+
+    <div class="section-title">📤 Resumen para compartir</div>
+    <div class="section-sub">Genera un mensaje corto con los highlights del mes seleccionado en "Vista mes a mes", listo para pegar en WhatsApp.</div>
+    <button id="btnResumenSemanal" style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;">💬 Generar resumen</button>
+    <textarea id="resumenTextArea" readonly style="display:none;width:100%;margin-top:12px;min-height:130px;font-family:'Inter',sans-serif;font-size:13px;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:#fff;"></textarea>
+
     <div class="section-title">📊 Ranking Acumulado del Equipo</div>
     <div class="section-sub">Los 13 asesores ordenados por Net Revenue acumulado — verde: top performers, amarillo: constantes, rojo: necesita apoyo.</div>
     <div class="table-card"><div id="accumRankingTable"></div></div>
@@ -307,9 +316,15 @@
     <div class="filter-row">
       <label>Mes:</label>
       <select id="mensualMonthSelect"></select>
+      <label style="margin-left:10px;">Comparar con:</label>
+      <select id="mensualCompareSelect"></select>
     </div>
 
     <div class="kpi-grid" id="mensualKpis"></div>
+
+    <div class="table-card" id="mensualCompareCard" style="display:none;">
+      <div id="mensualCompareTable"></div>
+    </div>
 
     <div class="section-title">🎯 Cumplimiento de equipo</div>
     <div class="kpi-grid" id="mensualCumplimiento"></div>
@@ -351,9 +366,10 @@ const CONFIG = {
 const MONTH_ORDER = ["Abril 2026","Mayo 2026","Junio 2026","Julio 2026","Agosto 2026","Septiembre 2026"];
 const MESES_MAP = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};
 
-// Estos 4 asesores están en el Modelo Anterior — su barra de progreso en el
-// perfil muestra meta fija de $5.000 de Net Revenue (100%) en vez del tier
-// del Modelo Nuevo. El resto del equipo sigue viendo el progreso a tiers.
+// Ya nadie del equipo está en el Modelo Anterior — todos ven la barra de
+// progreso a tiers y la calculadora del Modelo Nuevo. Se deja el arreglo
+// vacío (en vez de borrar la lógica) por si en el futuro alguien vuelve
+// a necesitar el Modelo Anterior.
 const MODELO_ANTERIOR_ASESORES = [];
 
 /* =========================================================================
@@ -446,9 +462,13 @@ let advisorCharts = [];
 let TRM_COP = null; // Tasa Representativa del Mercado (COP por USD) del día
 
 /* ----------------------------- Utilidades ----------------------------- */
-const fmtMoney = n => (n===null||n===undefined||n==="") ? "—" : "$" + Math.round(n).toLocaleString("es-CO");
-const fmtCOP = n => (n===null||n===undefined||n==="") ? "—" : "$" + Math.round(n).toLocaleString("es-CO") + " COP";
-const fmtPct = n => (n===null||n===undefined||n==="") ? "—" : n.toFixed(1) + "%";
+// Si el Sheet manda un error de fórmula (ej. "#DIV/0!" cuando el CR no se puede
+// calcular por falta de meetings/ventas todavía), lo tratamos como "sin dato"
+// en vez de dejar que rompa el render de toda la tabla.
+const isNum = n => typeof n === "number" && !isNaN(n);
+const fmtMoney = n => (n===null||n===undefined||n===""||!isNum(n)) ? "—" : "$" + Math.round(n).toLocaleString("es-CO");
+const fmtCOP = n => (n===null||n===undefined||n===""||!isNum(n)) ? "—" : "$" + Math.round(n).toLocaleString("es-CO") + " COP";
+const fmtPct = n => (n===null||n===undefined||n===""||!isNum(n)) ? "—" : n.toFixed(1) + "%";
 const initials = name => name.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
 
 // Normaliza los valores de "mes" (recorta espacios, respeta mayúsculas/minúsculas
@@ -493,12 +513,18 @@ function normalizeRosterFields(data){
   if(data && data.roster) data.roster.forEach(r=>{ if(r.cumpleanos) r.cumpleanos = canonicalizeCumpleanos(r.cumpleanos); });
   return data;
 }
+
+// Normaliza "activo" en Historico: si esa columna en el Sheet quedó como casilla
+// de verificación (checkbox) en vez de texto, Apps Script la manda como booleano
+// true/false en vez del texto "TRUE"/"FALSE" que espera el resto del código, y esa
+// fila desaparece de todas las tablas. Aquí se acepta cualquiera de las dos formas.
 function normalizeHistoricoFields(data){
   if(data && data.historico) data.historico.forEach(h=>{
     h.activo = (h.activo===true || String(h.activo).trim().toUpperCase()==="TRUE") ? "TRUE" : "FALSE";
   });
   return data;
 }
+
 // TRM (COP por USD) publicada por datos.gov.co (Superfinanciera) — se usa para
 // convertir las comisiones calculadas de USD a pesos colombianos.
 async function fetchTRM(){
@@ -576,6 +602,31 @@ function nextTier(revenueAcum){
   return null;
 }
 
+// Proyección de cierre: toma lo recaudado hasta hoy en un mes "En curso" y lo
+// extrapola al ritmo diario actual para estimar el total al cierre del mes.
+// Recibe {recaudado, meta, estado} — sirve tanto para el KPI del equipo como
+// para la fila de un asesor individual.
+function proyeccionCierre(obj){
+  if (!obj || obj.estado !== "En curso" || !isNum(obj.recaudado) || !isNum(obj.meta) || obj.meta<=0) return null;
+  const hoy = new Date();
+  const diasEnMes = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
+  const diaActual = Math.min(Math.max(1, hoy.getDate()), diasEnMes);
+  const ritmoDiario = obj.recaudado / diaActual;
+  const proyectado = ritmoDiario * diasEnMes;
+  const pctProyectado = proyectado / obj.meta * 100;
+  return { proyectado, pctProyectado, diaActual, diasEnMes };
+}
+
+// Racha de meses seguidos (cerrados) trayendo al menos 1 referido.
+function referralStreak(asesor){
+  const hist = historyForClosed(asesor);
+  let s = 0;
+  for(let i=hist.length-1;i>=0;i--){
+    if(hist[i].referidos>0) s++; else break;
+  }
+  return s;
+}
+
 /* ----------------------------- Cumpleaños del día ----------------------------- */
 function todaysBirthdays(){
   const today = new Date();
@@ -645,11 +696,15 @@ function renderOverview(){
   const totalRefs = DATA.kpis.reduce((s,k)=>s+(k.referidos||0),0);
   const pctAcum = totalMeta ? (totalRevenue/totalMeta*100) : 0;
 
+  const enCursoKpi = DATA.kpis.find(k=>k.estado==="En curso");
+  const proy = proyeccionCierre(enCursoKpi ? {recaudado: enCursoKpi.recaudado, meta: enCursoKpi.meta, estado: enCursoKpi.estado} : null);
+
   document.getElementById("overviewKpis").innerHTML = `
     <div class="kpi-card accent"><div class="label">NR Acumulado del Equipo</div><div class="value">${fmtMoney(totalRevenue)}</div><div class="sub">Meta: ${fmtMoney(totalMeta)}</div></div>
     <div class="kpi-card"><div class="label">% Cumplimiento Acumulado</div><div class="value">${fmtPct(pctAcum)}</div><div class="sub">Abril – Agosto 2026</div></div>
     <div class="kpi-card"><div class="label">Ventas Totales</div><div class="value">${totalVentas}</div><div class="sub">Pagos acumulados</div></div>
     <div class="kpi-card"><div class="label">Referidos Totales</div><div class="value">🤝🏻 ${totalRefs}</div><div class="sub">Todo el período</div></div>
+    ${proy ? `<div class="kpi-card" style="border-top:4px solid var(--gold);"><div class="label">Proyección de cierre (${enCursoKpi.mes})</div><div class="value">${fmtMoney(proy.proyectado)}</div><div class="sub">${fmtPct(proy.pctProyectado)} de la meta · día ${proy.diaActual} de ${proy.diasEnMes}</div></div>` : ''}
   `;
 
   const totals = {};
@@ -686,6 +741,69 @@ function renderOverview(){
   renderBands(monthSel.value);
   renderPeriodMessage(monthSel.value);
   renderReferralRanking();
+  renderResumenAsesores();
+}
+
+// Tabla de un vistazo por asesor: cuánto falta para el próximo tier, si el CR
+// de este mes da bono/penalización, y la racha de meses seguidos con referidos.
+function renderResumenAsesores(){
+  const el = document.getElementById("resumenAsesoresTable");
+  if(!el) return;
+  const asesores = [...new Set(DATA.historico.map(h=>h.asesor))].sort();
+  const rows = asesores.map(a=>{
+    const hist = historyFor(a).filter(h=>h.activo==="TRUE");
+    const last = hist[hist.length-1];
+    if(!last) return `<tr><td>${a}</td><td colspan="3" style="color:var(--muted);">Sin meses activos</td></tr>`;
+
+    const esAnterior = MODELO_ANTERIOR_ASESORES.indexOf(a) !== -1;
+    let tierTxt = "—";
+    if(!esAnterior){
+      const nt = nextTier(last.revenue);
+      tierTxt = nt ? `Faltan ${fmtMoney(Math.max(0, nt.nr_min - last.revenue))} para ${nt.tier}` : "🏆 Tier 5 alcanzado";
+    }
+
+    let crBadge = `<span class="badge mid">—</span>`;
+    if(isNum(last.cr_pct)){
+      if(last.cr_pct >= 13) crBadge = `<span class="badge top">🎯 Bono x1.2</span>`;
+      else if(last.cr_pct < 9.9) crBadge = `<span class="badge low">⚠️ Penalización x0.9</span>`;
+      else crBadge = `<span class="badge mid">Sin ajuste</span>`;
+    }
+
+    const racha = referralStreak(a);
+    return `<tr><td>${a}</td><td>${tierTxt}</td><td>${crBadge}</td><td class="num">${racha} ${racha===1?'mes':'meses'}</td></tr>`;
+  }).join("");
+
+  el.innerHTML = `<table><thead><tr><th>Asesor</th><th>Próximo tier</th><th>CR este mes</th><th>Racha referidos</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// Genera un mensaje de texto plano (sin HTML) con los highlights del mes
+// seleccionado en "Vista mes a mes", listo para pegar en WhatsApp con el equipo.
+function generarResumenTexto(){
+  const mes = document.getElementById("overviewMonthSelect").value;
+  const rows = DATA.historico.filter(h=>h.mes===mes && h.activo==="TRUE");
+  if(!rows.length) return `Sin datos activos para ${mes} todavía.`;
+
+  const top = [...rows].sort((a,b)=>b.revenue-a.revenue)[0];
+  const refsTop = [...rows].sort((a,b)=>b.referidos-a.referidos)[0];
+  const enRiesgo = rows.filter(h=>h.pct_cumplimiento<60);
+
+  let txt = `📊 Resumen ${mes} — Team Kei🔥\n\n`;
+  txt += `🏆 ${top.asesor} lideró con ${fmtMoney(top.revenue)} (${fmtPct(top.pct_cumplimiento)} de meta)\n`;
+  if(refsTop && refsTop.referidos>0) txt += `🤝 ${refsTop.asesor} trajo más referidos: ${refsTop.referidos}\n`;
+  if(enRiesgo.length) txt += `⚠️ En zona roja: ${enRiesgo.map(h=>h.asesor).join(", ")}\n`;
+  txt += `\n¡Sigamos así equipo! 🔥`;
+  return txt;
+}
+
+const btnResumenSemanal = document.getElementById("btnResumenSemanal");
+if(btnResumenSemanal){
+  btnResumenSemanal.onclick = ()=>{
+    const ta = document.getElementById("resumenTextArea");
+    ta.value = generarResumenTexto();
+    ta.style.display = "block";
+    ta.select();
+    if(navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(()=>{});
+  };
 }
 
 // Ranking de los 13 asesores por NR acumulado: top4 verde, siguientes 4 amarillo, últimos 5 rojo.
@@ -882,6 +1000,12 @@ function renderPerfil(){
       } else {
         personalHtml += `<p style="margin-top:14px;"><strong>🏆 Superaste el Tier 5</strong> este mes — el nivel más alto del modelo nuevo.</p>`;
       }
+    }
+
+    const kpiLast = DATA.kpis.find(k=>k.mes===last.mes);
+    const proyA = proyeccionCierre({recaudado: last.revenue, meta: last.meta, estado: kpiLast ? kpiLast.estado : null});
+    if(proyA){
+      personalHtml += `<p style="margin-top:10px;"><strong>📈 Proyección de cierre</strong> — al ritmo actual, cerrarías ${last.mes} con ${fmtMoney(proyA.proyectado)} (${fmtPct(proyA.pctProyectado)} de tu meta de ${fmtMoney(last.meta)}), día ${proyA.diaActual} de ${proyA.diasEnMes}.</p>`;
     }
   }
   document.getElementById("personalBox").innerHTML = personalHtml;
@@ -1132,8 +1256,42 @@ function renderMensualSelector(){
   const sel = document.getElementById("mensualMonthSelect");
   sel.innerHTML = allMonths().map(m=>`<option value="${m}">${m}</option>`).join("");
   sel.value = latestClosedMonth();
-  sel.onchange = ()=>renderMensual(sel.value);
+  sel.onchange = ()=>{ renderMensual(sel.value); renderMensualCompare(); };
+
+  const cmp = document.getElementById("mensualCompareSelect");
+  if(cmp){
+    cmp.innerHTML = `<option value="">— Ninguno —</option>` + allMonths().map(m=>`<option value="${m}">${m}</option>`).join("");
+    cmp.onchange = renderMensualCompare;
+  }
+
   renderMensual(sel.value);
+  renderMensualCompare();
+}
+
+// Compara dos meses lado a lado en las métricas de equipo (KPIs), sin tocar
+// la tabla principal de "Detalle de todos los asesores" de arriba.
+function renderMensualCompare(){
+  const card = document.getElementById("mensualCompareCard");
+  if(!card) return;
+  const mesA = document.getElementById("mensualMonthSelect").value;
+  const mesB = document.getElementById("mensualCompareSelect").value;
+  if(!mesB){ card.style.display = "none"; return; }
+
+  const kpiA = DATA.kpis.find(k=>k.mes===mesA);
+  const kpiB = DATA.kpis.find(k=>k.mes===mesB);
+  if(!kpiA || !kpiB){ card.style.display = "none"; return; }
+
+  card.style.display = "";
+  const filas = [
+    ["Revenue equipo", fmtMoney(kpiA.recaudado), fmtMoney(kpiB.recaudado)],
+    ["% Cumplimiento", kpiA.estado==="En curso" ? "En curso" : fmtPct(kpiA.cumplimiento_pct), kpiB.estado==="En curso" ? "En curso" : fmtPct(kpiB.cumplimiento_pct)],
+    ["CR promedio", fmtPct(kpiA.cr_prom_pct), fmtPct(kpiB.cr_prom_pct)],
+    ["Ventas totales", kpiA.total_ventas ?? "—", kpiB.total_ventas ?? "—"],
+    ["Referidos", kpiA.referidos ?? "—", kpiB.referidos ?? "—"]
+  ];
+  document.getElementById("mensualCompareTable").innerHTML = `
+    <table><thead><tr><th>Métrica</th><th>${mesA}</th><th>${mesB}</th></tr></thead>
+    <tbody>${filas.map(f=>`<tr><td>${f[0]}</td><td class="num">${f[1]}</td><td class="num">${f[2]}</td></tr>`).join("")}</tbody></table>`;
 }
 
 function renderMensual(mes){
@@ -1272,7 +1430,7 @@ async function loadData(){
       document.getElementById("mockBanner").style.display = "block";
     }
   }
- normalizeMonthFields(DATA);
+  normalizeMonthFields(DATA);
   normalizeRosterFields(DATA);
   normalizeHistoricoFields(DATA);
   document.getElementById("lastUpdated").textContent = "Actualizado: " + new Date(DATA.generadoEn || Date.now()).toLocaleString("es-CO");
