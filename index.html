@@ -546,6 +546,7 @@ async function fetchTRM(){
 function closedMonths(){ return DATA.kpis.filter(k=>k.estado==="Cerrado").map(k=>k.mes); }
 function allMonths(){ return DATA.kpis.map(k=>k.mes); }
 function latestClosedMonth(){ const m = closedMonths(); return m[m.length-1]; }
+function latestMonth(){ const m = allMonths(); return m[m.length-1]; }
 
 // La pestaña de metas de referidos usa nombres de mes sin año ("ABRIL"),
 // mientras que KPIs/Historico usan "Abril 2026" — comparamos solo el nombre del mes.
@@ -734,7 +735,7 @@ function renderOverview(){
 
   const monthSel = document.getElementById("overviewMonthSelect");
   monthSel.innerHTML = allMonths().map(m=>`<option value="${m}">${m}</option>`).join("");
-  monthSel.value = latestClosedMonth();
+  monthSel.value = latestMonth();
   monthSel.onchange = ()=>{ renderOverviewMonthly(monthSel.value); renderBands(monthSel.value); renderPeriodMessage(monthSel.value); };
   renderOverviewMonthly(monthSel.value);
   renderAdvisorCharts();
@@ -1255,7 +1256,7 @@ function calcAnterior(){
 function renderMensualSelector(){
   const sel = document.getElementById("mensualMonthSelect");
   sel.innerHTML = allMonths().map(m=>`<option value="${m}">${m}</option>`).join("");
-  sel.value = latestClosedMonth();
+  sel.value = latestMonth();
   sel.onchange = ()=>{ renderMensual(sel.value); renderMensualCompare(); };
 
   const cmp = document.getElementById("mensualCompareSelect");
