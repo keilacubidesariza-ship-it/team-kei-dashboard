@@ -493,7 +493,12 @@ function normalizeRosterFields(data){
   if(data && data.roster) data.roster.forEach(r=>{ if(r.cumpleanos) r.cumpleanos = canonicalizeCumpleanos(r.cumpleanos); });
   return data;
 }
-
+function normalizeHistoricoFields(data){
+  if(data && data.historico) data.historico.forEach(h=>{
+    h.activo = (h.activo===true || String(h.activo).trim().toUpperCase()==="TRUE") ? "TRUE" : "FALSE";
+  });
+  return data;
+}
 // TRM (COP por USD) publicada por datos.gov.co (Superfinanciera) — se usa para
 // convertir las comisiones calculadas de USD a pesos colombianos.
 async function fetchTRM(){
@@ -1267,8 +1272,9 @@ async function loadData(){
       document.getElementById("mockBanner").style.display = "block";
     }
   }
-  normalizeMonthFields(DATA);
+ normalizeMonthFields(DATA);
   normalizeRosterFields(DATA);
+  normalizeHistoricoFields(DATA);
   document.getElementById("lastUpdated").textContent = "Actualizado: " + new Date(DATA.generadoEn || Date.now()).toLocaleString("es-CO");
   renderAll();
 
