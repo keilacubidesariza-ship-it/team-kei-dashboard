@@ -341,6 +341,10 @@
     <div class="section-title">📋 Detalle de todos los asesores</div>
     <div class="table-card"><div id="mensualTable"></div></div>
 
+    <div class="section-title" id="mensualReembolsosTitle" style="display:none;">💸 Reembolsos del mes</div>
+    <div class="section-sub" id="mensualReembolsosSub" style="display:none;">Ya están descontados del cash y de la comisión de cada asesor arriba.</div>
+    <div class="table-card" id="mensualReembolsosCard" style="display:none;"><div id="mensualReembolsosTable"></div></div>
+
   </section>
 
 </main>
@@ -434,6 +438,9 @@ const MOCK_DATA = {
     {mes:"JULIO", meta:12, logrado:7},
     {mes:"AGOSTO", meta:12, logrado:1}
   ],
+  reembolsos: [
+    {asesor:"Camilo Bravo", mes:"Agosto 2026", monto:1200, motivo:"cash"}
+  ],
   nuevoModelo: {
     tiers: [
       {tier:"Tier 1",pct_comision:0.02,pagos_min:7,nr_min:9100,condicion:"Ambas: pagos Y Net Revenue"},
@@ -525,6 +532,48 @@ function normalizeHistoricoFields(data){
   return data;
 }
 
+// Resta los reembolsos (correo o cash) del cash de cada asesor, para que
+// afecten todo lo que depende de "revenue": ranking acumulado, KPIs del
+// equipo, tiers y la comisión en la calculadora. data.reembolsos viene de
+// la pestaña "Reembolsos" del Sheet: [{asesor, mes, monto, motivo}].
+// Guarda el monto original en h.reembolso para poder mostrarlo aparte.
+function applyReembolsos(data){
+  if(!data) return data;
+  if(!Array.isArray(data.reembolsos)) data.reembolsos = [];
+
+  const porAsesorMes = {};
+  data.reembolsos.forEach(r=>{
+    r.mes = canonicalizeMes(r.mes);
+    r.monto = Number(r.monto) || 0;
+    const key = r.asesor + "|" + r.mes;
+    porAsesorMes[key] = (porAsesorMes[key] || 0) + r.monto;
+  });
+
+  if(data.historico) data.historico.forEach(h=>{
+    const key = h.asesor + "|" + h.mes;
+    const reembolso = porAsesorMes[key] || 0;
+    h.reembolso = reembolso;
+    if(reembolso){
+      h.revenue = (h.revenue || 0) - reembolso;
+      h.pct_cumplimiento = h.meta > 0 ? (h.revenue / h.meta * 100) : h.pct_cumplimiento;
+    }
+  });
+
+  if(data.kpis){
+    const porMes = {};
+    data.reembolsos.forEach(r=>{ porMes[r.mes] = (porMes[r.mes]||0) + r.monto; });
+    data.kpis.forEach(k=>{
+      const total = porMes[k.mes] || 0;
+      k.reembolsos = total;
+      if(total && isNum(k.recaudado)){
+        k.recaudado = k.recaudado - total;
+        if(isNum(k.cumplimiento_pct) && k.meta>0) k.cumplimiento_pct = k.recaudado / k.meta * 100;
+      }
+    });
+  }
+  return data;
+}
+
 // TRM (COP por USD) publicada por datos.gov.co (Superfinanciera) — se usa para
 // convertir las comisiones calculadas de USD a pesos colombianos.
 async function fetchTRM(){
@@ -546,6 +595,9 @@ async function fetchTRM(){
 function closedMonths(){ return DATA.kpis.filter(k=>k.estado==="Cerrado").map(k=>k.mes); }
 function allMonths(){ return DATA.kpis.map(k=>k.mes); }
 function latestClosedMonth(){ const m = closedMonths(); return m[m.length-1]; }
+// Mes más reciente con KPI registrado, esté cerrado o "En curso" — se usa como
+// valor por defecto de los selectores, para que el mes actual (ej. Septiembre)
+// aparezca de entrada sin que el usuario tenga que cambiarlo manualmente.
 function latestMonth(){ const m = allMonths(); return m[m.length-1]; }
 
 // La pestaña de metas de referidos usa nombres de mes sin año ("ABRIL"),
@@ -699,6 +751,7 @@ function renderOverview(){
 
   const enCursoKpi = DATA.kpis.find(k=>k.estado==="En curso");
   const proy = proyeccionCierre(enCursoKpi ? {recaudado: enCursoKpi.recaudado, meta: enCursoKpi.meta, estado: enCursoKpi.estado} : null);
+  const totalReembolsos = (DATA.reembolsos||[]).reduce((s,r)=>s+(Number(r.monto)||0),0);
 
   document.getElementById("overviewKpis").innerHTML = `
     <div class="kpi-card accent"><div class="label">NR Acumulado del Equipo</div><div class="value">${fmtMoney(totalRevenue)}</div><div class="sub">Meta: ${fmtMoney(totalMeta)}</div></div>
@@ -706,6 +759,7 @@ function renderOverview(){
     <div class="kpi-card"><div class="label">Ventas Totales</div><div class="value">${totalVentas}</div><div class="sub">Pagos acumulados</div></div>
     <div class="kpi-card"><div class="label">Referidos Totales</div><div class="value">🤝🏻 ${totalRefs}</div><div class="sub">Todo el período</div></div>
     ${proy ? `<div class="kpi-card" style="border-top:4px solid var(--gold);"><div class="label">Proyección de cierre (${enCursoKpi.mes})</div><div class="value">${fmtMoney(proy.proyectado)}</div><div class="sub">${fmtPct(proy.pctProyectado)} de la meta · día ${proy.diaActual} de ${proy.diasEnMes}</div></div>` : ''}
+    ${totalReembolsos>0 ? `<div class="kpi-card" style="border-top:4px solid var(--red);"><div class="label">Reembolsos acumulados</div><div class="value">-${fmtMoney(totalReembolsos)}</div><div class="sub">Ya descontados del NR y de las comisiones</div></div>` : ''}
   `;
 
   const totals = {};
@@ -1008,6 +1062,11 @@ function renderPerfil(){
     if(proyA){
       personalHtml += `<p style="margin-top:10px;"><strong>📈 Proyección de cierre</strong> — al ritmo actual, cerrarías ${last.mes} con ${fmtMoney(proyA.proyectado)} (${fmtPct(proyA.pctProyectado)} de tu meta de ${fmtMoney(last.meta)}), día ${proyA.diaActual} de ${proyA.diasEnMes}.</p>`;
     }
+
+    if(last.reembolso){
+      const motivos = (DATA.reembolsos||[]).filter(r=>r.asesor===currentAsesor && r.mes===last.mes).map(r=>r.motivo).filter(Boolean).join(", ");
+      personalHtml += `<p style="margin-top:10px;"><strong>💸 Reembolso en ${last.mes}</strong> — se descontaron ${fmtMoney(last.reembolso)}${motivos? ` (${motivos})`:''} de tu cash, ya reflejado arriba y en tu comisión.</p>`;
+    }
   }
   document.getElementById("personalBox").innerHTML = personalHtml;
 
@@ -1023,9 +1082,6 @@ function renderPerfil(){
       </tr>`;
     }).join("") || `<tr><td colspan="9" class="empty">Sin meses activos registrados</td></tr>`}</tbody></table>`;
 
-  // Solo Freddy y Karol siguen en el Modelo Anterior — para ellos se fuerza esa
-  // calculadora y se oculta el switch. El resto del equipo ve directamente la
-  // calculadora del Modelo Nuevo, sin poder cambiar de modelo.
   const esModeloAnterior = MODELO_ANTERIOR_ASESORES.indexOf(currentAsesor) !== -1;
   currentCalcModel = esModeloAnterior ? "anterior" : "nuevo";
   const calcToggle = document.getElementById("calcToggle");
@@ -1189,7 +1245,11 @@ function calcNuevo(){
     refNota = '';
   }
 
-  const total = comisionVariable + fijo + refBonus;
+  // Orden del desglose: primero se ajusta la comisión con el bono/penalización
+  // de referidos (subtotal), y al final se suma el salario fijo — así se ve
+  // claro que el fijo de $500 no se toca por la penalización de referidos.
+  const subtotalComision = comisionVariable + refBonus;
+  const total = subtotalComision + fijo;
   const comisionPromedio = pagos>0 ? total/pagos : 0;
   const totalCOP = TRM_COP ? total * TRM_COP : null;
   document.getElementById("nResult").innerHTML = `
@@ -1198,8 +1258,8 @@ function calcNuevo(){
       Tier alcanzado: <b>${achieved? achieved.tier + " (" + fmtPct(achieved.pct_comision*100) + ")" : "Ninguno aún"}</b><br>
       ${crPenalizaAplica? `⚠️ CR de ${fmtPct(cr)} (menor a 9.9%) — solo se paga 90% de la comisión<br>` : ''}
       ${crBonusAplica? `🎯 CR de ${fmtPct(cr)} (13% o más) — comisión variable x1.2 aplicada<br>` : ''}
-      Comisión variable: ${fmtMoney(comisionVariable)} · Salario fijo mensual: ${fmtMoney(fijo)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refNota}<br>
-      <b>Total = ${fmtMoney(comisionVariable)} (comisión) + ${fmtMoney(fijo)} (salario fijo) + ${fmtMoney(refBonus)} (referidos) = ${fmtMoney(total)}</b><br>
+      Comisión variable: ${fmtMoney(comisionVariable)} · Bono/penalización referidos: ${fmtMoney(refBonus)}${refNota} · Salario fijo mensual: ${fmtMoney(fijo)}<br>
+      <b>Total = ${fmtMoney(comisionVariable)} (comisión) ${refBonus>=0?'+':'−'} ${fmtMoney(Math.abs(refBonus))} (referidos) = ${fmtMoney(subtotalComision)} (subtotal) + ${fmtMoney(fijo)} (salario fijo) = ${fmtMoney(total)}</b><br>
       <b>Comisión promedio por venta:</b> ${pagos>0? fmtMoney(comisionPromedio) : "—"} ${pagos>0? `(tasa efectiva ${fmtPct(nr? total/nr*100 : 0)} sobre tu NR)`:''}
     </div>
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);font-size:12.5px;color:#B9D3EC;">
@@ -1352,6 +1412,17 @@ function renderMensual(mes){
       <td class="num">${fmtPct(h.pct_cumplimiento)}</td><td class="num">${h.meetings||"—"}</td><td class="num">${h.ventas}</td><td class="num">${fmtPct(h.cr_pct)}</td><td class="num">🤝🏻 ${h.referidos}</td>
     </tr>`;
     }).join("")}</tbody></table>` : `<div class="empty">Sin asesores activos este mes.</div>`;
+
+  const reembolsosMes = (DATA.reembolsos||[]).filter(r=>r.mes===mes);
+  const showReembolsos = reembolsosMes.length>0;
+  document.getElementById("mensualReembolsosTitle").style.display = showReembolsos? "" : "none";
+  document.getElementById("mensualReembolsosSub").style.display = showReembolsos? "" : "none";
+  document.getElementById("mensualReembolsosCard").style.display = showReembolsos? "" : "none";
+  if(showReembolsos){
+    document.getElementById("mensualReembolsosTable").innerHTML = `
+      <table><thead><tr><th>Asesor</th><th>Monto</th><th>Motivo</th></tr></thead>
+      <tbody>${reembolsosMes.map(r=>`<tr><td>${r.asesor}</td><td class="num">-${fmtMoney(r.monto)}</td><td>${r.motivo||"—"}</td></tr>`).join("")}</tbody></table>`;
+  }
 }
 
 // Insights automáticos del mes seleccionado — top performer, más mejorado, mejor CR,
@@ -1434,6 +1505,7 @@ async function loadData(){
   normalizeMonthFields(DATA);
   normalizeRosterFields(DATA);
   normalizeHistoricoFields(DATA);
+  applyReembolsos(DATA);
   document.getElementById("lastUpdated").textContent = "Actualizado: " + new Date(DATA.generadoEn || Date.now()).toLocaleString("es-CO");
   renderAll();
 
