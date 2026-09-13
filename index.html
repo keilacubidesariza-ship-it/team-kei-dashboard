@@ -444,10 +444,11 @@ const MOCK_DATA = {
   nuevoModelo: {
     tiers: [
       {tier:"Tier 1",pct_comision:0.02,pagos_min:7,nr_min:9100,condicion:"Ambas: pagos Y Net Revenue"},
-      {tier:"Tier 2",pct_comision:0.06,pagos_min:9,nr_min:11700,condicion:"Ambas: pagos Y Net Revenue"},
-      {tier:"Tier 3",pct_comision:0.07,pagos_min:14,nr_min:18200,condicion:"Ambas: pagos Y Net Revenue"},
-      {tier:"Tier 4",pct_comision:0.09,pagos_min:18,nr_min:23400,condicion:"Solo Net Revenue"},
-      {tier:"Tier 5",pct_comision:0.10,pagos_min:23,nr_min:29900,condicion:"Solo Net Revenue"}
+      {tier:"Tier 2",pct_comision:0.04,pagos_min:8,nr_min:10400,condicion:"Ambas: pagos Y Net Revenue"},
+      {tier:"Tier 3",pct_comision:0.06,pagos_min:9,nr_min:11700,condicion:"Ambas: pagos Y Net Revenue"},
+      {tier:"Tier 4",pct_comision:0.07,pagos_min:14,nr_min:18200,condicion:"Ambas: pagos Y Net Revenue"},
+      {tier:"Tier 5",pct_comision:0.09,pagos_min:18,nr_min:23400,condicion:"Solo Net Revenue"},
+      {tier:"Tier 6",pct_comision:0.10,pagos_min:23,nr_min:29900,condicion:"Solo Net Revenue"}
     ],
     fijoMensual: 500,
     referidos: { primero:50, resto:100, cero:-100 }
@@ -541,6 +542,7 @@ function applyReembolsos(data){
   if(!data) return data;
   if(!Array.isArray(data.reembolsos)) data.reembolsos = [];
 
+  // Normaliza mes/monto de cada reembolso y agrupa por "asesor|mes"
   const porAsesorMes = {};
   data.reembolsos.forEach(r=>{
     r.mes = canonicalizeMes(r.mes);
@@ -559,6 +561,7 @@ function applyReembolsos(data){
     }
   });
 
+  // Total de reembolsos por mes, para descontar del KPI de equipo también.
   if(data.kpis){
     const porMes = {};
     data.reembolsos.forEach(r=>{ porMes[r.mes] = (porMes[r.mes]||0) + r.monto; });
@@ -814,7 +817,8 @@ function renderResumenAsesores(){
     let tierTxt = "—";
     if(!esAnterior){
       const nt = nextTier(last.revenue);
-      tierTxt = nt ? `Faltan ${fmtMoney(Math.max(0, nt.nr_min - last.revenue))} para ${nt.tier}` : "🏆 Tier 5 alcanzado";
+      const topTier = DATA.nuevoModelo.tiers[DATA.nuevoModelo.tiers.length-1];
+      tierTxt = nt ? `Faltan ${fmtMoney(Math.max(0, nt.nr_min - last.revenue))} para ${nt.tier}` : `🏆 ${topTier.tier} alcanzado`;
     }
 
     let crBadge = `<span class="badge mid">—</span>`;
@@ -1053,7 +1057,8 @@ function renderPerfil(){
           <p style="margin-top:14px;"><strong>Progreso a ${nt.tier}</strong> (${fmtPct(nt.pct_comision*100)} de comisión) — te faltan ${fmtMoney(nt.nr_min-last.revenue)} este mes</p>
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>`;
       } else {
-        personalHtml += `<p style="margin-top:14px;"><strong>🏆 Superaste el Tier 5</strong> este mes — el nivel más alto del modelo nuevo.</p>`;
+        const topTier = DATA.nuevoModelo.tiers[DATA.nuevoModelo.tiers.length-1];
+        personalHtml += `<p style="margin-top:14px;"><strong>🏆 Superaste el ${topTier.tier}</strong> este mes — el nivel más alto del modelo nuevo.</p>`;
       }
     }
 
@@ -1082,6 +1087,9 @@ function renderPerfil(){
       </tr>`;
     }).join("") || `<tr><td colspan="9" class="empty">Sin meses activos registrados</td></tr>`}</tbody></table>`;
 
+  // Solo Freddy y Karol siguen en el Modelo Anterior — para ellos se fuerza esa
+  // calculadora y se oculta el switch. El resto del equipo ve directamente la
+  // calculadora del Modelo Nuevo, sin poder cambiar de modelo.
   const esModeloAnterior = MODELO_ANTERIOR_ASESORES.indexOf(currentAsesor) !== -1;
   currentCalcModel = esModeloAnterior ? "anterior" : "nuevo";
   const calcToggle = document.getElementById("calcToggle");
