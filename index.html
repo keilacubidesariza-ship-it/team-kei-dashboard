@@ -151,8 +151,10 @@
   .progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));border-radius:20px;transition:width .4s;}
   .birthday-banner{background:linear-gradient(135deg,var(--orange),var(--gold));color:#fff;padding:10px 14px;border-radius:12px;font-weight:600;font-size:13px;margin-bottom:14px;}
 
-  .tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
-  .tier-card{background:var(--card);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);border:1px solid var(--border);}
+  .tier-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+  @media (max-width:900px){.tier-grid{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:560px){.tier-grid{grid-template-columns:repeat(2,1fr);}}
+  .tier-card{background:var(--card);border-radius:12px;padding:10px 10px;box-shadow:var(--shadow);border:1px solid var(--border);}
   .tier-card.reached{border-color:var(--gold);background:linear-gradient(135deg,#FFF8E6,#FFFFFF);}
   .tier-head{font-weight:700;font-size:12.5px;}
   .tier-head span{color:var(--muted);font-weight:600;font-size:11px;}
