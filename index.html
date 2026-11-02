@@ -470,7 +470,7 @@ let currentAsesor = null;
 let currentCalcModel = "nuevo";
 let advisorCharts = [];
 let TRM_COP = null; // Tasa Representativa del Mercado (COP por USD) del día
-
+let FX = { MXN:null, PEN:null, ARS:null }; // Tasas del día: cuántas unidades de cada moneda por 1 USD
 /* ----------------------------- Utilidades ----------------------------- */
 // Si el Sheet manda un error de fórmula (ej. "#DIV/0!" cuando el CR no se puede
 // calcular por falta de meetings/ventas todavía), lo tratamos como "sin dato"
@@ -479,6 +479,22 @@ const isNum = n => typeof n === "number" && !isNaN(n);
 const fmtMoney = n => (n===null||n===undefined||n===""||!isNum(n)) ? "—" : "$" + Math.round(n).toLocaleString("es-CO");
 const fmtCOP = n => (n===null||n===undefined||n===""||!isNum(n)) ? "—" : "$" + Math.round(n).toLocaleString("es-CO") + " COP";
 const fmtPct = n => (n===null||n===undefined||n===""||!isNum(n)) ? "—" : n.toFixed(1) + "%";
+// Formato para MXN, soles y ARS: Total USD × tasa de esa moneda
+const fmtFX = (n, cur) => (n===null||!isNum(n)) ? "Cargando…" : "$" + Math.round(n).toLocaleString("es-CO") + " " + cur;
+function otrasMonedasHTML(usd){
+  const monedas = [
+    { cur:"MXN", flag:"🇲🇽", label:"Pesos mexicanos" },
+    { cur:"PEN", flag:"🇵🇪", label:"Soles peruanos" },
+    { cur:"ARS", flag:"🇦🇷", label:"Pesos argentinos (oficial)" }
+  ];
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px;">` +
+    monedas.map(m => {
+      const tasa = FX[m.cur];
+      const valor = tasa ? usd * tasa : null;
+      return `<div>${m.flag} ${m.label}${tasa? ' <span style="opacity:.75">(1 USD = '+tasa.toLocaleString('es-CO',{maximumFractionDigits:2})+')</span>':''}<br>
+        <b style="color:#fff;font-size:17px;">${fmtFX(valor, m.cur)}</b></div>`;
+    }).join("") + `</div>`;
+}
 const initials = name => name.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
 
 // Normaliza los valores de "mes" (recorta espacios, respeta mayúsculas/minúsculas
@@ -590,6 +606,18 @@ async function fetchTRM(){
     }
   }catch(err){
     console.error("No se pudo obtener la TRM del día:", err);
+  }
+    // Tasas USD → MXN, PEN y ARS (open.er-api.com, gratis y sin API key)
+  try{
+    const resFX = await fetch("https://open.er-api.com/v6/latest/USD", {cache:"no-store"});
+    const fx = await resFX.json();
+    if(fx && fx.rates){
+      FX.MXN = fx.rates.MXN || null;
+      FX.PEN = fx.rates.PEN || null;
+      FX.ARS = fx.rates.ARS || null;
+    }
+  }catch(err){
+    console.error("No se pudieron obtener las tasas MXN/PEN/ARS:", err);
   }
   if(DATA && currentAsesor){
     if(currentCalcModel==="nuevo" && document.getElementById("nNR")) calcNuevo();
@@ -1275,6 +1303,7 @@ function calcNuevo(){
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);font-size:12.5px;color:#B9D3EC;">
       💱 En pesos colombianos ${TRM_COP? '(TRM del día: $'+TRM_COP.toLocaleString('es-CO')+' COP/USD)':''}<br>
       <b style="color:#fff;font-size:17px;">${totalCOP!==null? fmtCOP(totalCOP) : "Cargando TRM del día…"}</b>
+            ${otrasMonedasHTML(total)}
     </div>`;
 }
 
@@ -1319,6 +1348,7 @@ function calcAnterior(){
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);font-size:12.5px;color:#B9D3EC;">
       💱 En pesos colombianos ${TRM_COP? '(TRM del día: $'+TRM_COP.toLocaleString('es-CO')+' COP/USD)':''}<br>
       <b style="color:#fff;font-size:17px;">${cashFinalCOP!==null? fmtCOP(cashFinalCOP) : "Cargando TRM del día…"}</b>
+            ${otrasMonedasHTML(cashFinal)}
     </div>`;
 }
 
